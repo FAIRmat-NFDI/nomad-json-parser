@@ -1,0 +1,28 @@
+{
+  "template": "https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin",
+  "commit": "3c5b9b8bfb4c6e91c3f84aa6e5e453f2b721a326",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "FAIRmat",
+      "email": "fairmat@physik.hu-berlin.de",
+      "github_username": "FAIRmat-NFDI",
+      "plugin_name": "nomad-json-parser",
+      "module_name": "nomad_json_parser",
+      "short_description": "A NOMAD parser plugin for parsing json files to entries.",
+      "version": "0.1.0",
+      "license": "MIT",
+      "include_schema_package": true,
+      "include_normalizer": false,
+      "include_parser": true,
+      "include_app": true,
+      "include_example_uploads": true,
+      "_copy_without_render": [
+        "*.html"
+      ],
+      "_template": "https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin",
+      "_commit": "3c5b9b8bfb4c6e91c3f84aa6e5e453f2b721a326"
+    }
+  },
+  "directory": null
+}
