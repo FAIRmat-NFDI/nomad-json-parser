@@ -5,7 +5,7 @@ A NOMAD parser plugin for parsing json files to entries.
 This `nomad` plugin was generated with `Cookiecutter` along with `@nomad`'s [`cookiecutter-nomad-plugin`](https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin) template.
 
 > [!CAUTION]
-> This plugin is under development and still lacks functionallity documentation!
+> This plugin is under development and still lacks functionallity and documentation!
 
 ## Development
 
