@@ -111,11 +111,11 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [project.entry-points.'nomad.plugin']
-parser_entry_point = "nomad_json_parser.parsers:parser_entry_point"
-schema_package_entry_point = "nomad_json_parser.schema_packages:schema_package_entry_point"
+jsonmapper_entry = "nomad_json_parser:jsonmapper_entry"
+jsonmapper_parser = "nomad_json_parser:jsonmapper_parser"
+mappedjson_entry = "nomad_json_parser:mappedjson_entry"
+mappedjson_parser = "nomad_json_parser:mappedjson_parser"
 
-app_entry_point = "nomad_json_parser.apps:app_entry_point"
-example_upload_entry_point = "nomad_json_parser.example_uploads:example_upload_entry_point"
 [tool.cruft]
 # Avoid updating workflow files, this leads to permissions issues
 skip = [".github/*"]
