@@ -27,6 +27,7 @@ license = { file = "LICENSE" }
 dependencies = [
     "nomad-lab>=1.3.16",
     "python-magic-bin; sys_platform == 'win32'",
+    "nomad-materials-processing",
 ]
 
 [project.urls]
