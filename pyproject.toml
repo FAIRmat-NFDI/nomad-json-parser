@@ -29,10 +29,6 @@ dependencies = [
     "python-magic-bin; sys_platform == 'win32'",
 ]
 
-dev-dependencies = [
-    "nomad-lab[dev]>=1.3.16"
-]
-
 [project.urls]
 Repository = "https://github.com/FAIRmat-NFDI/nomad-json-parser"
 
@@ -40,6 +36,12 @@ Repository = "https://github.com/FAIRmat-NFDI/nomad-json-parser"
 dev = ["ruff", "pytest", "structlog",
     "python-logstash>=0.4.6"]
 
+
+
+[tool.uv]
+dev-dependencies = [
+    "nomad-lab[dev]>=1.3.16"
+]
 
 
 [tool.ruff]
