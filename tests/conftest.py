@@ -15,17 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import logging
 import os
 
 import pytest
 import structlog
 from nomad.client import parse
-from nomad.utils import structlogging
 from structlog.testing import LogCapture
-
-structlogging.ConsoleFormatter.short_format = True
-setattr(logging, 'Formatter', structlogging.ConsoleFormatter)
 
 
 @pytest.fixture(
