@@ -34,7 +34,7 @@ Repository = "https://github.com/FAIRmat-NFDI/nomad-json-parser"
 
 [project.optional-dependencies]
 dev = ["ruff", "pytest", "structlog",
-    "python-logstash>=0.4.6"]
+    "python-logstash>=0.4.6", "nomad-lab[dev]"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
