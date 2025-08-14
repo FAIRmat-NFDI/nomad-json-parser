@@ -187,6 +187,62 @@ class JsonMapperParser(MatchingParser):
         archive.metadata.entry_name = data_file + ' mapper file'
 
 
+def transform_subclass(subclass_mapping, logger, jsonfile):
+    subclass = get_class(subclass_mapping['path_to_schema'], logger)()
+    subrules = {
+        'sub_transformation': Rules(
+            **json.loads(createrulesjson(subclass_mapping['rules']))
+        )
+    }
+    subtransformer = Transformer(subrules)
+    transformed_sub = subtransformer.transform(jsonfile, 'sub_transformation')
+    tempunits = transformed_sub.pop('tempunits', None)
+    subclass.m_update_from_dict(transformed_sub)
+    if tempunits:
+        for unitkey in tempunits.keys():
+            from pint import UnitRegistry
+
+            ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
+            setattr(
+                subclass,
+                unitkey,
+                subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
+            )
+    return subclass
+
+
+def map_subclass(  # noqa: PLR0913
+    mainclass, subclass_mapping, subsubclass_mapping, logger, archive, jsonfile
+):
+    subclass = transform_subclass(subclass_mapping, logger, jsonfile)
+
+    for map in subsubclass_mapping:
+        subsubclass = transform_subclass(map, logger, jsonfile)
+        if 'is_archive' in map.keys() and map['is_archive']:
+            sub_ref = create_archive(
+                subsubclass,
+                archive,
+                subsubclass.name + '.archive.json',
+            )
+            setattr(subclass, map['main_key'].split('.')[1], sub_ref)
+        elif 'repeats' in map.keys() and map['repeats']:
+            subclass[map['main_key'].split('.')[1]].append(subsubclass)
+        else:
+            setattr(subclass, map['main_key'].split('.')[1], subsubclass)
+
+    if 'is_archive' in subclass_mapping.keys() and subclass_mapping['is_archive']:
+        sub_ref = create_archive(
+            subclass,
+            archive,
+            subclass.name + '.archive.json',
+        )
+        setattr(mainclass, subclass_mapping['main_key'], sub_ref)
+    elif 'repeats' in subclass_mapping.keys() and subclass_mapping['repeats']:
+        mainclass[subclass_mapping['main_key']].append(subclass)
+    else:
+        setattr(mainclass, subclass_mapping['main_key'], subclass)
+
+
 class MappedJsonParser(MatchingParser):
     def set_entrydata_definition(self):
         self.entrydata_definition = MappedJson
@@ -246,40 +302,32 @@ class MappedJsonParser(MatchingParser):
             mainclass.m_update_from_dict(transformed_main)
 
             for i in range(len(mapper['subsection_mappings'])):
-                submapping = mapper['subsection_mappings'][i]
-                subclass = get_class(submapping['path_to_schema'], logger)()
-                subrules = {
-                    'sub_transformation': Rules(
-                        **json.loads(createrulesjson(submapping['rules']))
-                    )
-                }
-                subtransformer = Transformer(subrules)
-                transformed_sub = subtransformer.transform(
-                    jsonfile, 'sub_transformation'
+                submap = mapper['subsection_mappings'][i]
+                if len(submap['main_key'].split('.')) > 2:  # noqa: PLR2004
+                    logger.warning('Deeper Subclass nesting not yet supported.')
+                    continue
+                if '.' in submap['main_key']:
+                    continue
+                subsubmap = []
+                for j in range(len(mapper['subsection_mappings'])):
+                    if (
+                        '.' not in mapper['subsection_mappings'][j]['main_key']
+                        or i == j
+                    ):
+                        continue
+                    if (
+                        mapper['subsection_mappings'][j]['main_key'].split('.')[0]
+                        == submap['main_key']
+                    ):
+                        subsubmap.append(mapper['subsection_mappings'][j])
+                map_subclass(
+                    mainclass,
+                    submap,
+                    subsubmap,
+                    logger,
+                    archive,
+                    jsonfile,
                 )
-                tempunits = transformed_sub.pop('tempunits', None)
-                subclass.m_update_from_dict(transformed_sub)
-                if tempunits:
-                    for unitkey in tempunits.keys():
-                        from pint import UnitRegistry
-
-                        ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
-                        setattr(
-                            subclass,
-                            unitkey,
-                            subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
-                        )
-                if 'is_archive' in submapping.keys() and submapping['is_archive']:
-                    sub_ref = create_archive(
-                        subclass,
-                        archive,
-                        subclass.name + '.archive.json',
-                    )
-                    setattr(mainclass, submapping['main_key'], sub_ref)
-                elif 'repeats' in submapping.keys() and submapping['repeats']:
-                    mainclass[submapping['main_key']].append(subclass)
-                else:
-                    setattr(mainclass, submapping['main_key'], subclass)
 
             create_archive(
                 mainclass,
