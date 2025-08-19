@@ -196,6 +196,10 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     }
     subtransformer = Transformer(subrules)
     transformed_sub = subtransformer.transform(jsonfile, 'sub_transformation')
+
+    logger.info(subclass_mapping['rules'])
+    logger.info(transformed_sub)
+
     tempunits = transformed_sub.pop('tempunits', None)
     subclass.m_update_from_dict(transformed_sub)
     if tempunits:
@@ -211,36 +215,39 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     return subclass
 
 
-def map_subclass(  # noqa: PLR0913
-    mainclass, subclass_mapping, subsubclass_mapping, logger, archive, jsonfile
-):
-    subclass = transform_subclass(subclass_mapping, logger, jsonfile)
-
-    for map in subsubclass_mapping:
-        subsubclass = transform_subclass(map, logger, jsonfile)
-        if 'is_archive' in map.keys() and map['is_archive']:
-            sub_ref = create_archive(
-                subsubclass,
-                archive,
-                subsubclass.name + '.archive.json',
-            )
-            setattr(subclass, map['main_key'].split('.')[1], sub_ref)
-        elif 'repeats' in map.keys() and map['repeats']:
-            subclass[map['main_key'].split('.')[1]].append(subsubclass)
-        else:
-            setattr(subclass, map['main_key'].split('.')[1], subsubclass)
-
-    if 'is_archive' in subclass_mapping.keys() and subclass_mapping['is_archive']:
-        sub_ref = create_archive(
-            subclass,
-            archive,
-            subclass.name + '.archive.json',
-        )
-        setattr(mainclass, subclass_mapping['main_key'], sub_ref)
-    elif 'repeats' in subclass_mapping.keys() and subclass_mapping['repeats']:
-        mainclass[subclass_mapping['main_key']].append(subclass)
+def map_with_nesting(mapper, mapkey, logger, archive, jsonfile):
+    mapkey_parent = mapkey + '.'
+    if mapkey == '':
+        subclass = transform_subclass(mapper['main_mapping'], logger, jsonfile)
     else:
-        setattr(mainclass, subclass_mapping['main_key'], subclass)
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if submap['main_key'] == mapkey:
+                subclass = transform_subclass(submap, logger, jsonfile)
+    for i in range(len(mapper['subsection_mappings'])):
+        submap = mapper['subsection_mappings'][i]
+        shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
+        if mapkey == '':
+            mapkey_parent = ''
+        if (
+            submap['main_key'].startswith(mapkey_parent)
+            and '.' not in shortened_mainkey
+        ):
+            subsubclass = map_with_nesting(
+                mapper, submap['main_key'], logger, archive, jsonfile
+            )
+            if 'is_archive' in submap.keys() and submap['is_archive']:
+                sub_ref = create_archive(
+                    subsubclass,
+                    archive,
+                    subsubclass.name + '.archive.json',
+                )
+                setattr(subclass, shortened_mainkey, sub_ref)
+            elif 'repeats' in submap.keys() and submap['repeats']:
+                subclass[shortened_mainkey].append(subsubclass)
+            else:
+                setattr(subclass, shortened_mainkey, subsubclass)
+    return subclass
 
 
 class MappedJsonParser(MatchingParser):
@@ -288,46 +295,7 @@ class MappedJsonParser(MatchingParser):
             else:
                 logger.error('No mapper was found.')
 
-            mainrules = {
-                'main_transformation': Rules(
-                    **json.loads(createrulesjson(mapper['main_mapping']['rules']))
-                )
-            }
-            maintransformer = Transformer(mainrules)
-            transformed_main = maintransformer.transform(
-                jsonfile, 'main_transformation'
-            )
-
-            mainclass = get_class(mapper['main_mapping']['path_to_schema'], logger)()
-            mainclass.m_update_from_dict(transformed_main)
-
-            for i in range(len(mapper['subsection_mappings'])):
-                submap = mapper['subsection_mappings'][i]
-                if len(submap['main_key'].split('.')) > 2:  # noqa: PLR2004
-                    logger.warning('Deeper Subclass nesting not yet supported.')
-                    continue
-                if '.' in submap['main_key']:
-                    continue
-                subsubmap = []
-                for j in range(len(mapper['subsection_mappings'])):
-                    if (
-                        '.' not in mapper['subsection_mappings'][j]['main_key']
-                        or i == j
-                    ):
-                        continue
-                    if (
-                        mapper['subsection_mappings'][j]['main_key'].split('.')[0]
-                        == submap['main_key']
-                    ):
-                        subsubmap.append(mapper['subsection_mappings'][j])
-                map_subclass(
-                    mainclass,
-                    submap,
-                    subsubmap,
-                    logger,
-                    archive,
-                    jsonfile,
-                )
+            mainclass = map_with_nesting(mapper, '', logger, archive, jsonfile)
 
             create_archive(
                 mainclass,

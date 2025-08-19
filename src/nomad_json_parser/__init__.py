@@ -65,3 +65,33 @@ mappedjson_parser = MappedJsonParserEntryPoint(
     mainfile_mime_re='application/json',
     mainfile_contents_re=r'.+mapped_json_class_key',
 )
+
+
+class MainLevelEntryPoint(SchemaPackageEntryPoint):
+    parameter: int = Field(0, description='Custom configuration parameter')
+
+    def load(self):
+        from nomad_json_parser.example import m_package
+
+        return m_package
+
+
+examplemain_entry = MainLevelEntryPoint(
+    name='JSON Mapper Importer',
+    description='New schema package entry point configuration.',
+)
+
+
+class ReferenceEntryPoint(SchemaPackageEntryPoint):
+    parameter: int = Field(0, description='Custom configuration parameter')
+
+    def load(self):
+        from nomad_json_parser.example import m_package
+
+        return m_package
+
+
+examplereference_entry = ReferenceEntryPoint(
+    name='JSON Mapper Importer',
+    description='New schema package entry point configuration.',
+)

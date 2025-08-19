@@ -1,0 +1,11 @@
+{
+    "mapped_json_class_key": "examplemapper",
+    "Mainname": "This is the main name",
+    "Sublevels": {"SublevelOne": "This is sublevel 1 name", "Sublevel2name": "This is sublevel 2 name", "Further": {"Sublevel3name": "This is sublevel 3 name"}},
+    "Repeating": {"R1": "First section", "R2": "Second section"},
+    "value": 1,
+    "unit": "cm",
+    "value_list": [1,3.4,1.5,2.6],
+    "value_unit": "g",
+    "reference_name": "This is the reference name"
+}
