@@ -49,20 +49,20 @@
             }
         }
     },
-    "Repeating2": {
-        "schema": "nomad_json_parser.example.SubLevelRepeating",
-        "main_key": "repeating",
-        "repeats": "True",
-        "rules": {
-            "Repeating.R2": "string"
-        }
-    },
     "Repeating1": {
         "schema": "nomad_json_parser.example.SubLevelRepeating",
         "main_key": "repeating",
         "repeats": "True",
         "rules": {
             "Repeating.R1": "string"
+        }
+    },
+    "Repeating2": {
+        "schema": "nomad_json_parser.example.SubLevelRepeating",
+        "main_key": "repeating",
+        "repeats": "True",
+        "rules": {
+            "Repeating.R2": "string"
         }
     },
     "Unit": {

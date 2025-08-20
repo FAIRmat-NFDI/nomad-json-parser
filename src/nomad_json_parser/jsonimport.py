@@ -138,7 +138,6 @@ class MappedJson(EntryData, ArchiveSection):
     mapper_reference = Quantity(
         type=Reference(JsonMapper.m_def),
         description='A reference to the component system.',
-        a_eln=dict(component='ReferenceEditQuantity'),
     )
 
     def normalize(self, archive, logger: BoundLogger) -> None:

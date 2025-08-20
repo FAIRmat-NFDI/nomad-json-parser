@@ -58,6 +58,9 @@ class SubLevelRepeating(ArchiveSection):
 class SubLevelUnit(ArchiveSection):
     unit = Quantity(type=float, description='Number test', unit='m')
 
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
 
 class SubLevelList(ArchiveSection):
     unit = Quantity(type=float, shape=['*'], description='List test', unit='kg')

@@ -51,6 +51,96 @@ from nomad_json_parser.jsonimport import (
 )
 
 
+def create_rules(subsection, key, logger):
+    rules = []
+    if 'rules' in subsection:
+        for rulekey in subsection['rules'].keys():
+            rule = subsection['rules'][rulekey]
+            rulesection = MapperRule()
+            try:
+                if not ('source' in rule.keys() and 'target' in rule.keys()):
+                    logger.error(
+                        f'Rule {rulekey} from Subsection {key} is \
+                            missing source or target key.'
+                    )
+                rulesection.name = rulekey
+                rulesection.source = rule['source']
+                rulesection.target = rule['target']
+                if 'default_value' in rule.keys():
+                    rulesection.default_value = rule['default_value']
+                if 'use_rule' in rule.keys():
+                    rulesection.use_rule = rule['use_rule']
+                if 'conditions' in rule.keys():
+                    condlist = []
+                    for condition in rule['conditions']:
+                        conditionssection = RuleCondition()
+                        condname = next(iter(condition))
+                        conditionssection.name = condname
+                        conditionssection.regex_path = condition[condname]['regex_path']
+                        conditionssection.regex_pattern = condition[condname][
+                            'regex_pattern'
+                        ]
+                        condlist.append(conditionssection)
+                    rulesection.conditions = condlist
+            except AttributeError:
+                rulesection.name = f'{rulekey}_to_{rule}'
+                rulesection.source = rulekey
+                rulesection.target = rule
+            rules.append(rulesection)
+    else:
+        logger.warning(
+            f'Rules section is missing from Subsection {key}. \
+                No mapping will be done.'
+        )
+    return rules
+
+
+def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912
+    main_found = False
+    subsections = []
+    for key in jsonfile.keys():
+        if key == 'json_mapper_class_key':
+            continue
+        subsection = jsonfile[key]
+        if 'is_main' in subsection and subsection['is_main'] == 'True':
+            sectionclass = MainMapper()
+            if (
+                'main_key' in subsection
+                or 'is_archive' in subsection
+                or 'repeats' in subsection
+            ):
+                logger.error(
+                    'Main section of json mapper should not contain \
+                        main_key or is_archive or repeats.'
+                )
+        else:
+            sectionclass = SubSectionMapper()
+            try:
+                sectionclass.main_key = subsection['main_key']
+            except KeyError:
+                logger.error(f'main_key is missing from Subsection {key}.')
+            if 'is_archive' in subsection:
+                sectionclass.is_archive = subsection['is_archive']
+            if 'repeats' in subsection:
+                sectionclass.repeats = subsection['repeats']
+        sectionclass.name = key
+        try:
+            sectionclass.path_to_schema = subsection['schema']
+        except KeyError:
+            logger.error(f'schema is missing from Subsection {key}.')
+        sectionclass.rules = create_rules(subsection, key, logger)
+        sectionclass.normalize(archive, logger)
+        if 'is_main' in subsection:
+            if not main_found:
+                main_mapping = sectionclass
+                main_found = True
+            else:
+                logger.error('is_main can only be in one Subsection.')
+        else:
+            subsections.append(sectionclass)
+    return main_mapping, subsections
+
+
 class JsonMapperParser(MatchingParser):
     def set_entrydata_definition(self):
         self.entrydata_definition = JsonMapper
@@ -94,92 +184,9 @@ class JsonMapperParser(MatchingParser):
                         'At least one mapper with the same key has been found.'
                     )
 
-            subsections = []
-            for key in jsonfile.keys():
-                if key == 'json_mapper_class_key':
-                    continue
-                subsection = jsonfile[key]
-                if 'is_main' in subsection and subsection['is_main'] == 'True':
-                    sectionclass = MainMapper()
-                    if (
-                        'main_key' in subsection
-                        or 'is_archive' in subsection
-                        or 'repeats' in subsection
-                    ):
-                        logger.error(
-                            'Main section of json mapper should not contain \
-                                main_key or is_archive or repeats.'
-                        )
-                else:
-                    sectionclass = SubSectionMapper()
-                    try:
-                        sectionclass.main_key = subsection['main_key']
-                    except KeyError:
-                        logger.error(f'main_key is missing from Subsection {key}.')
-                    if 'is_archive' in subsection:
-                        sectionclass.is_archive = subsection['is_archive']
-                    if 'repeats' in subsection:
-                        sectionclass.repeats = subsection['repeats']
-                sectionclass.name = key
-                try:
-                    sectionclass.path_to_schema = subsection['schema']
-                except KeyError:
-                    logger.error(f'schema is missing from Subsection {key}.')
-                if 'rules' in subsection:
-                    rules = []
-                    for rulekey in subsection['rules'].keys():
-                        rule = subsection['rules'][rulekey]
-                        rulesection = MapperRule()
-                        try:
-                            if not (
-                                'source' in rule.keys() and 'target' in rule.keys()
-                            ):
-                                logger.error(
-                                    f'Rule {rulekey} in SubSection {key} is \
-                                        missing source or target key.'
-                                )
-                            rulesection.name = rulekey
-                            rulesection.source = rule['source']
-                            rulesection.target = rule['target']
-                            if 'default_value' in rule.keys():
-                                rulesection.default_value = rule['default_value']
-                            if 'use_rule' in rule.keys():
-                                rulesection.use_rule = rule['use_rule']
-                            if 'conditions' in rule.keys():
-                                condlist = []
-                                for condition in rule['conditions']:
-                                    conditionssection = RuleCondition()
-                                    condname = next(iter(condition))
-                                    conditionssection.name = condname
-                                    conditionssection.regex_path = condition[condname][
-                                        'regex_path'
-                                    ]
-                                    conditionssection.regex_pattern = condition[
-                                        condname
-                                    ]['regex_pattern']
-                                    condlist.append(conditionssection)
-                                rulesection.conditions = condlist
-                        except AttributeError:
-                            rulesection.name = f'{rulekey}_to_{rule}'
-                            rulesection.source = rulekey
-                            rulesection.target = rule
-                        rules.append(rulesection)
-                    sectionclass.rules = rules
-                else:
-                    logger.warning(
-                        f'Rules section is missing from Subsection {key}. \
-                            No mapping will be done.'
-                    )
-                sectionclass.normalize(archive, logger)
-                if 'is_main' in subsection:
-                    if entry.main_mapping is None:
-                        entry.main_mapping = sectionclass
-                    else:
-                        logger.error('is_main can only be in one Subsection.')
-                else:
-                    subsections.append(sectionclass)
-                logger.info(sectionclass.m_to_dict())
-            entry.subsection_mappings = subsections
+            entry.main_mapping, entry.subsection_mappings = create_sectionclass(
+                jsonfile, logger, archive
+            )
             if entry.main_mapping is None:
                 logger.error('No main mapping found.')
 
@@ -215,15 +222,16 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     return subclass
 
 
-def map_with_nesting(mapper, mapkey, logger, archive, jsonfile):
+def map_with_nesting(mapper, mapname, logger, archive, jsonfile):
+    mapkey = ''
+    for i in range(len(mapper['subsection_mappings'])):
+        submap = mapper['subsection_mappings'][i]
+        if submap['name'] == mapname:
+            mapkey = submap['main_key']
+            subclass = transform_subclass(submap, logger, jsonfile)
     mapkey_parent = mapkey + '.'
     if mapkey == '':
         subclass = transform_subclass(mapper['main_mapping'], logger, jsonfile)
-    else:
-        for i in range(len(mapper['subsection_mappings'])):
-            submap = mapper['subsection_mappings'][i]
-            if submap['main_key'] == mapkey:
-                subclass = transform_subclass(submap, logger, jsonfile)
     for i in range(len(mapper['subsection_mappings'])):
         submap = mapper['subsection_mappings'][i]
         shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
@@ -234,7 +242,7 @@ def map_with_nesting(mapper, mapkey, logger, archive, jsonfile):
             and '.' not in shortened_mainkey
         ):
             subsubclass = map_with_nesting(
-                mapper, submap['main_key'], logger, archive, jsonfile
+                mapper, submap['name'], logger, archive, jsonfile
             )
             if 'is_archive' in submap.keys() and submap['is_archive']:
                 sub_ref = create_archive(
@@ -295,7 +303,9 @@ class MappedJsonParser(MatchingParser):
             else:
                 logger.error('No mapper was found.')
 
-            mainclass = map_with_nesting(mapper, '', logger, archive, jsonfile)
+            mainclass = map_with_nesting(
+                mapper, mapper['main_mapping']['name'], logger, archive, jsonfile
+            )
 
             create_archive(
                 mainclass,
