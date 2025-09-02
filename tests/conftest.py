@@ -51,10 +51,10 @@ def fixture_caplog(request):
 
 
 @pytest.fixture(
-    name='parsed_measurement_archive',
+    name='parsed_mapper_archive',
     scope='function',
 )
-def fixture_parsed_measurement_archive(request):
+def fixture_parsed_mapper_archive(request):
     """
     Sets up data for testing and cleans up after the test. The data file is parsed,
     returning an `EntryArchive` object. It contains a reference to the `.archive.json`
@@ -77,11 +77,9 @@ def fixture_parsed_measurement_archive(request):
     else:
         rel_file_path = request.param
 
-    rel_measurement_archive_path = os.path.join(
-        rel_file_path.rsplit('.', 1)[0] + '.json'
-    )
+    rel_mapper_archive_path = os.path.join(rel_file_path.rsplit('.', 1)[0] + '.json')
 
-    yield parse(rel_measurement_archive_path)[0]
+    yield parse(rel_mapper_archive_path)[0]
 
     # clean up
     for ext in clean_up_extensions:

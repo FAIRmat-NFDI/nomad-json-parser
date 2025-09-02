@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     )
 
 import json
+import time
 
 from nomad.datamodel import ClientContext, EntryArchive
 from nomad.datamodel.metainfo.annotations import (
@@ -39,7 +40,7 @@ from nomad.search import search
 from nomad.utils.json_transformer import Transformer
 from nomad_material_processing.utils import create_archive
 
-from nomad_json_parser.jsonimport import (
+from nomad_json_parser.schema_packages.jsonimport import (
     JsonMapper,
     MainMapper,
     MappedJson,
@@ -204,9 +205,6 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     subtransformer = Transformer(subrules)
     transformed_sub = subtransformer.transform(jsonfile, 'sub_transformation')
 
-    logger.info(subclass_mapping['rules'])
-    logger.info(transformed_sub)
-
     tempunits = transformed_sub.pop('tempunits', None)
     subclass.m_update_from_dict(transformed_sub)
     if tempunits:
@@ -282,24 +280,29 @@ class MappedJsonParser(MatchingParser):
 
         logger.info('Starting search for mapper with same key.')
         if not isinstance(archive.m_context, ClientContext):
-            search_result = search(
-                owner='all',
-                query={
-                    'results.eln.sections:any': ['JsonMapper'],
-                    'results.eln.names:any': [entry.mapper_key],
-                },
-                user_id=archive.metadata.main_author.user_id,
-            )
-            if len(search_result.data) > 1:
-                logger.error('Two or more mappers were found.')
-            elif len(search_result.data) == 1:
-                upload_id = search_result.data[0]['upload_id']
-                entry_id = search_result.data[0]['entry_id']
-                entry.mapper_reference = (
-                    f'../uploads/{upload_id}/archive/{entry_id}#data'
+            for count in range(5):
+                logger.info(f'Starting search loop {count}.')
+                search_result = search(
+                    owner='all',
+                    query={
+                        'results.eln.sections:any': ['JsonMapper'],
+                        'results.eln.names:any': [entry.mapper_key],
+                    },
+                    user_id=archive.metadata.main_author.user_id,
                 )
+                if len(search_result.data) > 1:
+                    logger.error('Two or more mappers were found.')
+                    break
+                elif len(search_result.data) == 1:
+                    upload_id = search_result.data[0]['upload_id']
+                    entry_id = search_result.data[0]['entry_id']
+                    entry.mapper_reference = (
+                        f'../uploads/{upload_id}/archive/{entry_id}#data'
+                    )
 
-                mapper = search_result.data[0]['data']
+                    mapper = search_result.data[0]['data']
+                    break
+                time.sleep(5)
             else:
                 logger.error('No mapper was found.')
 

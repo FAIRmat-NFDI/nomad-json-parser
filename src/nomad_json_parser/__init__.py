@@ -9,7 +9,7 @@ class JsonMapperEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from nomad_json_parser.jsonimport import m_package
+        from nomad_json_parser.schema_packages.jsonimport import m_package
 
         return m_package
 
@@ -24,7 +24,7 @@ class MappedJsonEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from nomad_json_parser.jsonimport import m_package
+        from nomad_json_parser.schema_packages.jsonimport import m_package
 
         return m_package
 
@@ -37,7 +37,7 @@ mappedjson_entry = MappedJsonEntryPoint(
 
 class JsonMapperParserEntryPoint(ParserEntryPoint):
     def load(self):
-        from nomad_json_parser.parser import JsonMapperParser
+        from nomad_json_parser.parsers.parser import JsonMapperParser
 
         return JsonMapperParser(**self.dict())
 
@@ -53,7 +53,7 @@ jsonmapper_parser = JsonMapperParserEntryPoint(
 
 class MappedJsonParserEntryPoint(ParserEntryPoint):
     def load(self):
-        from nomad_json_parser.parser import MappedJsonParser
+        from nomad_json_parser.parsers.parser import MappedJsonParser
 
         return MappedJsonParser(**self.dict())
 
@@ -71,7 +71,7 @@ class MainLevelEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from nomad_json_parser.example import m_package
+        from nomad_json_parser.schema_packages.example import m_package
 
         return m_package
 
@@ -86,7 +86,7 @@ class ReferenceEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from nomad_json_parser.example import m_package
+        from nomad_json_parser.schema_packages.example import m_package
 
         return m_package
 

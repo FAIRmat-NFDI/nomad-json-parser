@@ -15,23 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
+import logging
+
 import pytest
-from nomad.client import normalize_all
+from nomad.client import normalize_all, parse
 
 # Test JsonMapper funtionality
 
 test_files = [
-    'tests/data/full_mapper.json',
+    'tests/data/example_mapper.json',
 ]
 log_levels = ['error', 'critical']
 
 
 @pytest.mark.parametrize(
-    'parsed_measurement_archive, caplog',
+    'parsed_mapper_archive, caplog',
     [(file, log_level) for file in test_files for log_level in log_levels],
     indirect=True,
 )
-def test_normalize_eto(parsed_measurement_archive, caplog):
+def test_normalize_mapper(parsed_mapper_archive, caplog):
     """
     Tests the normalization of the parsed archive.
 
@@ -39,27 +42,45 @@ def test_normalize_eto(parsed_measurement_archive, caplog):
         parsed_archive (pytest.fixture): Fixture to handle the parsing of archive.
         caplog (pytest.fixture): Fixture to capture errors from the logger.
     """
-    normalize_all(parsed_measurement_archive)
+    normalize_all(parsed_mapper_archive)
 
-    assert parsed_measurement_archive.data.mapper_key == 'CPFSBridgmanTechnique'
-    assert len(parsed_measurement_archive.data.subsection_mappings) == 5  # Noqa: PLR2004
-    assert parsed_measurement_archive.data.main_mapping.name == 'main_schema'
-
-
-# Test MappdJson funtionality
-
-test_files = [
-    'tests/data/data.json',
-]
-log_levels = ['error', 'critical']
+    assert parsed_mapper_archive.data.mapper_key == 'examplemapper'
+    assert len(parsed_mapper_archive.data.subsection_mappings) == 8  # Noqa: PLR2004
+    assert parsed_mapper_archive.data.main_mapping.name == 'main_schema'
 
 
-@pytest.mark.parametrize(
-    'parsed_measurement_archive, caplog',
-    [(file, log_level) for file in test_files for log_level in log_levels],
-    indirect=True,
-)
-def test_normalize_act(parsed_measurement_archive, caplog):
+def test_mapping_function():
+    from nomad_json_parser.parsers.parser import map_with_nesting
+
+    mapper_archive = parse('tests/data/test_mapper.json')[0]
+
+    normalize_all(mapper_archive)
+
+    file = open('tests/data/example_data.json')
+
+    jsonfile = json.load(file)
+
+    archive = parse('tests/data/example_data.json')[0]
+
+    logger = logging.getLogger(__name__)
+
+    result = map_with_nesting(
+        mapper_archive['data'].m_to_dict(),
+        mapper_archive['data']['main_mapping']['name'],
+        logger,
+        archive,
+        jsonfile,
+    )
+
+    assert len(result) == 7  # Noqa: PLR2004
+    assert result.repeating[1].string == 'Second section'
+    assert result.nesting.nesting.nesting.string == 'This is sublevel 3 name'
+    assert len(result.list.unit) == 4  # Noqa: PLR2004
+    assert result.unit.unit.magnitude == 0.01  # Noqa: PLR2004
+    assert result.unit.unit.units == 'meter'
+
+
+def test_normalize_mapped():
     """
     Tests the normalization of the parsed archive.
 
@@ -67,6 +88,8 @@ def test_normalize_act(parsed_measurement_archive, caplog):
         parsed_archive (pytest.fixture): Fixture to handle the parsing of archive.
         caplog (pytest.fixture): Fixture to capture errors from the logger.
     """
-    normalize_all(parsed_measurement_archive)
+    test_files = 'tests/data/example_data.json'
 
-    assert parsed_measurement_archive.data.mapper_key == 'CPFSBridgmanTechnique'
+    entry_archive = parse(test_files)[0]
+
+    assert entry_archive.data.mapper_key == 'examplemapper'

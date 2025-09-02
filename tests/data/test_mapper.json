@@ -80,13 +80,5 @@
             "value_list": "unit",
             "value_unit": "tempunits.unit"
         }
-    },
-    "Reference": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevelReference",
-        "main_key": "reference",
-        "is_archive": "True",
-        "rules": {
-            "reference_name": "name"
-        }
     }
 }

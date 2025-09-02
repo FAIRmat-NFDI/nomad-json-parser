@@ -131,17 +131,15 @@ class JsonMapper(EntryData, ArchiveSection):
 class MappedJson(EntryData, ArchiveSection):
     json_file = Quantity(type=str, escription='Link to json file')
     mapper_key = Quantity(type=str, description='Key to map with the mapper schema')
-    # mapper_reference = Quantity(
-    #     type=JsonMapper, description='A reference to the JsonMapper entry.'
-    # )
-
     mapper_reference = Quantity(
         type=Reference(JsonMapper.m_def),
-        description='A reference to the component system.',
+        description='A reference to the JsonMapper entry.',
     )
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
+
+        logger.info(self.mapper_reference.main_mapping.name)
 
 
 m_package.__init_metainfo__()
