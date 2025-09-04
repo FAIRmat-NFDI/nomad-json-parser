@@ -120,6 +120,7 @@ mappedjson_entry = "nomad_json_parser:mappedjson_entry"
 mappedjson_parser = "nomad_json_parser:mappedjson_parser"
 examplemain_entry = "nomad_json_parser:examplemain_entry"
 examplereference_entry = "nomad_json_parser:examplereference_entry"
+example_upload_entry_point = "nomad_json_parser.example_uploads:example_upload_entry_point"
 
 [tool.cruft]
 # Avoid updating workflow files, this leads to permissions issues
