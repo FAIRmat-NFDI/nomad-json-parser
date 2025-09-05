@@ -100,7 +100,7 @@ def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912
     main_found = False
     subsections = []
     for key in jsonfile.keys():
-        if key == 'json_mapper_class_key':
+        if key in {'json_mapper_class_key', 'json_mapper_version'}:
             continue
         subsection = jsonfile[key]
         if 'is_main' in subsection and subsection['is_main'] == 'True':
@@ -166,23 +166,33 @@ class JsonMapperParser(MatchingParser):
             try:
                 entry.mapper_key = jsonfile['json_mapper_class_key']
                 archive.results.eln.names = [entry.mapper_key]
+                if 'json_mapper_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['json_mapper_version']
+                else:
+                    entry.mapper_version = 1
+                archive.results.eln.tags = [entry.mapper_version]
             except KeyError:
                 logger.error(
                     'Missing keys for jsonmapper file (json_mapper_class_key).'
                 )
-            logger.info('Starting search for already existing mappers with same key.')
+            logger.info(
+                'Starting search for already existing mappers with\
+                      same key and version.'
+            )
             if not isinstance(archive.m_context, ClientContext):
                 search_result = search(
                     owner='all',
                     query={
                         'results.eln.sections:any': ['JsonMapper'],
                         'results.eln.names:any': [entry.mapper_key],
+                        'results.eln.tags:any': [entry.mapper_version],
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
                 if len(search_result.data) > 0:
                     logger.error(
-                        'At least one mapper with the same key has been found.'
+                        'At least one mapper with the same key and\
+                              version has been found.'
                     )
 
             entry.main_mapping, entry.subsection_mappings = create_sectionclass(
@@ -260,7 +270,7 @@ class MappedJsonParser(MatchingParser):
     def set_entrydata_definition(self):
         self.entrydata_definition = MappedJson
 
-    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912
         self.set_entrydata_definition()
         data_file = mainfile.split('/')[-1]
         data_file_with_path = mainfile.split('raw/')[-1]
@@ -273,6 +283,8 @@ class MappedJsonParser(MatchingParser):
 
             try:
                 entry.mapper_key = jsonfile['mapped_json_class_key']
+                if 'mapped_json_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['mapped_json_version']
             except KeyError:
                 logger.error(
                     'Missing keys for mappedjson file (mapped_json_class_key).'
@@ -290,17 +302,39 @@ class MappedJsonParser(MatchingParser):
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
-                if len(search_result.data) > 1:
-                    logger.error('Two or more mappers were found.')
-                    break
-                elif len(search_result.data) == 1:
-                    upload_id = search_result.data[0]['upload_id']
-                    entry_id = search_result.data[0]['entry_id']
+                if len(search_result.data) > 0:
+                    logger.info(f'Found {len(search_result.data)} suitable mappers.')
+                    versionlist = []
+                    for map in search_result.data:
+                        versionlist.append(map['data']['mapper_version'])
+                    if not list(set(versionlist)) == sorted(versionlist):
+                        logger.error('Mapper version exists more than once.')
+                    if entry.mapper_version:
+                        logger.info(
+                            f'Taking mapper with version {entry.mapper_version}.'
+                        )
+                        if entry.mapper_version in versionlist:
+                            mapper_result = search_result.data[
+                                versionlist.index(entry.mapper_version)
+                            ]
+                        else:
+                            logger.error(
+                                f'Mapper with version {entry.mapper_version} not found.'
+                            )
+                    else:
+                        logger.info(
+                            f'Taking mapper with latest version. It is {max(versionlist)}.'  # noqa: E501
+                        )
+                        mapper_result = search_result.data[
+                            versionlist.index(max(versionlist))
+                        ]
+                    upload_id = mapper_result['upload_id']
+                    entry_id = mapper_result['entry_id']
                     entry.mapper_reference = (
                         f'../uploads/{upload_id}/archive/{entry_id}#data'
                     )
 
-                    mapper = search_result.data[0]['data']
+                    mapper = mapper_result['data']
                     break
                 time.sleep(5)
             else:

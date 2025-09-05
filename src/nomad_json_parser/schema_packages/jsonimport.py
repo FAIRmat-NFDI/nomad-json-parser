@@ -120,6 +120,7 @@ class SubSectionMapper(MainMapper):
 
 class JsonMapper(EntryData, ArchiveSection):
     mapper_key = Quantity(type=str, description='Key to match with the imported JSON')
+    mapper_version = Quantity(type=int, description='Version of the mapper')
     main_mapping = SubSection(section_def=MainMapper)
     subsection_mappings = SubSection(section_def=SubSectionMapper, repeats=True)
     mapper_file = Quantity(type=str, description='Path to mapper file')
@@ -131,6 +132,7 @@ class JsonMapper(EntryData, ArchiveSection):
 class MappedJson(EntryData, ArchiveSection):
     json_file = Quantity(type=str, escription='Link to json file')
     mapper_key = Quantity(type=str, description='Key to map with the mapper schema')
+    mapper_version = Quantity(type=int, description='Version of the mapper')
     mapper_reference = Quantity(
         type=Reference(JsonMapper.m_def),
         description='A reference to the JsonMapper entry.',
