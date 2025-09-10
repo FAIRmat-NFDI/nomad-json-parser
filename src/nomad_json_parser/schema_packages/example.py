@@ -20,7 +20,9 @@ from structlog.stdlib import (
     BoundLogger,
 )
 
-configuration = config.get_plugin_entry_point('nomad_json_parser:examplemain_entry')
+configuration = config.get_plugin_entry_point(
+    'nomad_json_parser.schema_packages:example_schema_package'
+)
 m_package = SchemaPackage()
 
 

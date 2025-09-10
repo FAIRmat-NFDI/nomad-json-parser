@@ -114,12 +114,10 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [project.entry-points.'nomad.plugin']
-jsonmapper_entry = "nomad_json_parser:jsonmapper_entry"
-jsonmapper_parser = "nomad_json_parser:jsonmapper_parser"
-mappedjson_entry = "nomad_json_parser:mappedjson_entry"
-mappedjson_parser = "nomad_json_parser:mappedjson_parser"
-examplemain_entry = "nomad_json_parser:examplemain_entry"
-examplereference_entry = "nomad_json_parser:examplereference_entry"
+json_mapper_schema_package = "nomad_json_parser.schema_packages:json_mapper_schema_package"
+json_mapper_parser = "nomad_json_parser.parsers:json_mapper_parser"
+mapped_json_parser = "nomad_json_parser.parsers:mapped_json_parser"
+example_schema_package = "nomad_json_parser.schema_packages:example_schema_package"
 example_upload_entry_point = "nomad_json_parser.example_uploads:example_upload_entry_point"
 
 [tool.cruft]

@@ -21,7 +21,7 @@ import logging
 import pytest
 from nomad.client import normalize_all, parse
 
-# Test JsonMapper funtionality
+# Test JsonMapper functionality
 
 test_files = [
     'tests/data/example_mapper.json',
@@ -56,9 +56,8 @@ def test_mapping_function():
 
     normalize_all(mapper_archive)
 
-    file = open('tests/data/example_data.json')
-
-    jsonfile = json.load(file)
+    with open('tests/data/example_data.json') as file:
+        jsonfile = json.load(file)
 
     archive = parse('tests/data/example_data.json')[0]
 

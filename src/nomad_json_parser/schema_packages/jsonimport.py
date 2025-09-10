@@ -24,7 +24,9 @@ from structlog.stdlib import (
     BoundLogger,
 )
 
-configuration = config.get_plugin_entry_point('nomad_json_parser:jsonmapper_entry')
+configuration = config.get_plugin_entry_point(
+    'nomad_json_parser.schema_packages:json_mapper_schema_package'
+)
 m_package = SchemaPackage()
 
 
@@ -130,7 +132,7 @@ class JsonMapper(EntryData, ArchiveSection):
 
 
 class MappedJson(EntryData, ArchiveSection):
-    json_file = Quantity(type=str, escription='Link to json file')
+    json_file = Quantity(type=str, description='Link to json file')
     mapper_key = Quantity(type=str, description='Key to map with the mapper schema')
     mapper_version = Quantity(type=int, description='Version of the mapper')
     mapper_reference = Quantity(

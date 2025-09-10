@@ -61,8 +61,8 @@ def create_rules(subsection, key, logger):
             try:
                 if not ('source' in rule.keys() and 'target' in rule.keys()):
                     logger.error(
-                        f'Rule {rulekey} from Subsection {key} is \
-                            missing source or target key.'
+                        f'Rule {rulekey} from Subsection {key} is '
+                        'missing source or target key.'
                     )
                 rulesection.name = rulekey
                 rulesection.source = rule['source']
@@ -292,7 +292,8 @@ class MappedJsonParser(MatchingParser):
 
         logger.info('Starting search for mapper with same key.')
         if not isinstance(archive.m_context, ClientContext):
-            for count in range(5):
+            numberofretries = 5
+            for count in range(numberofretries):
                 logger.info(f'Starting search loop {count}.')
                 search_result = search(
                     owner='all',
