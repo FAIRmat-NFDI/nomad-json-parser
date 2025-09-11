@@ -139,11 +139,13 @@ class MappedJson(EntryData, ArchiveSection):
         type=Reference(JsonMapper.m_def),
         description='A reference to the JsonMapper entry.',
     )
+    generated_entries = Quantity(
+        type=Reference(EntryData.m_def),
+        description='NOMAD entries generated from this JSON',
+    )
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
-
-        logger.info(self.mapper_reference.main_mapping.name)
 
 
 m_package.__init_metainfo__()

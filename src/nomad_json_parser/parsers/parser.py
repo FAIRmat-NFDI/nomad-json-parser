@@ -345,11 +345,12 @@ class MappedJsonParser(MatchingParser):
                 mapper, mapper['main_mapping']['name'], logger, archive, jsonfile
             )
 
-            create_archive(
+            main_ref = create_archive(
                 mainclass,
                 archive,
                 mainclass.name + '.archive.json',
             )
+            entry.generated_entries = main_ref
 
         archive.data = entry
         archive.metadata.entry_name = data_file + ' json file'
