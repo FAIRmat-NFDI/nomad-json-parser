@@ -7,7 +7,7 @@ identified by the presence of the key `json_mapper_class_key`.
 JSON data files are identified by the presence of the key `mapped_json_class_key`. If a mapper with the same key value exists, the data will be parsed into NOMAD entries according to the mapping.
 
 ## Getting started
-`nomad-measurements` can be installed to your oasis via the steps given in [here](https://github.com/FAIRmat-NFDI/nomad-distro-template?tab=readme-ov-file#adding-a-plugin).
+`nomad-json-parser` can be installed to your oasis via the steps given in [here](https://github.com/FAIRmat-NFDI/nomad-distro-template?tab=readme-ov-file#adding-a-plugin).
 
 ### Setting up your OASIS
 Read the [NOMAD oasis documentation](https://nomad-lab.eu/prod/v1/docs/howto/oasis/configure.html#plugins) for details on how to add the plugin on your NOMAD instance.
