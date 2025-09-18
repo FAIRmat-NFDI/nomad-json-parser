@@ -364,5 +364,5 @@ class MappedJsonParser(MatchingParser):
 
         archive.data = entry
         archive.metadata.entry_name = (
-            f'{data_file}_JsonMapper_{entry.mapper_key}_v{entry.mapper_version}'
+            f'{data_file}_MappedJson_{entry.mapper_key}_v{entry.mapper_version}'
         )
