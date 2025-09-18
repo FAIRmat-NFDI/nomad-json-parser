@@ -148,7 +148,6 @@ class JsonMapperParser(MatchingParser):
 
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
         self.set_entrydata_definition()
-        data_file = mainfile.split('/')[-1]
         data_file_with_path = mainfile.split('raw/')[-1]
         entry = self.entrydata_definition()
         entry.mapper_file = data_file_with_path
@@ -202,7 +201,9 @@ class JsonMapperParser(MatchingParser):
                 logger.error('No main mapping found.')
 
         archive.data = entry
-        archive.metadata.entry_name = data_file + ' mapper file'
+        archive.metadata.entry_name = (
+            f'JsonMapper_{entry.mapper_key}_v{entry.mapper_version}'
+        )
 
 
 def transform_subclass(subclass_mapping, logger, jsonfile):
@@ -362,4 +363,6 @@ class MappedJsonParser(MatchingParser):
             entry.generated_entries = archive_list
 
         archive.data = entry
-        archive.metadata.entry_name = data_file + ' json file'
+        archive.metadata.entry_name = (
+            f'{data_file}_JsonMapper_{entry.mapper_key}_v{entry.mapper_version}'
+        )
