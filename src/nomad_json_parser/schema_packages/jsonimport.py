@@ -140,7 +140,8 @@ class MappedJson(EntryData, ArchiveSection):
         description='A reference to the JsonMapper entry.',
     )
     generated_entries = Quantity(
-        type=Reference(EntryData.m_def),
+        type=EntryData,
+        shape=['*'],
         description='NOMAD entries generated from this JSON',
     )
 

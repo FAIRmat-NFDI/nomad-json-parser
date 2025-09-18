@@ -63,12 +63,15 @@ def test_mapping_function():
 
     logger = logging.getLogger(__name__)
 
+    archive_list = []
+
     result = map_with_nesting(
         mapper_archive['data'].m_to_dict(),
         mapper_archive['data']['main_mapping']['name'],
         logger,
         archive,
         jsonfile,
+        archive_list,
     )
 
     assert len(result) == 7  # Noqa: PLR2004

@@ -230,7 +230,7 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     return subclass
 
 
-def map_with_nesting(mapper, mapname, logger, archive, jsonfile):
+def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0913
     mapkey = ''
     for i in range(len(mapper['subsection_mappings'])):
         submap = mapper['subsection_mappings'][i]
@@ -250,7 +250,7 @@ def map_with_nesting(mapper, mapname, logger, archive, jsonfile):
             and '.' not in shortened_mainkey
         ):
             subsubclass = map_with_nesting(
-                mapper, submap['name'], logger, archive, jsonfile
+                mapper, submap['name'], logger, archive, jsonfile, archive_list
             )
             if 'is_archive' in submap.keys() and submap['is_archive']:
                 sub_ref = create_archive(
@@ -258,6 +258,7 @@ def map_with_nesting(mapper, mapname, logger, archive, jsonfile):
                     archive,
                     subsubclass.name + '.archive.json',
                 )
+                archive_list.append(sub_ref)
                 setattr(subclass, shortened_mainkey, sub_ref)
             elif 'repeats' in submap.keys() and submap['repeats']:
                 subclass[shortened_mainkey].append(subsubclass)
@@ -341,8 +342,14 @@ class MappedJsonParser(MatchingParser):
             else:
                 logger.error('No mapper was found.')
 
+            archive_list = []
             mainclass = map_with_nesting(
-                mapper, mapper['main_mapping']['name'], logger, archive, jsonfile
+                mapper,
+                mapper['main_mapping']['name'],
+                logger,
+                archive,
+                jsonfile,
+                archive_list,
             )
 
             main_ref = create_archive(
@@ -350,7 +357,9 @@ class MappedJsonParser(MatchingParser):
                 archive,
                 mainclass.name + '.archive.json',
             )
-            entry.generated_entries = main_ref
+            archive_list.append(main_ref)
+            archive_list.reverse()  # put main entry as first
+            entry.generated_entries = archive_list
 
         archive.data = entry
         archive.metadata.entry_name = data_file + ' json file'
