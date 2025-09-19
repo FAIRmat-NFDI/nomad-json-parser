@@ -1,18 +1,35 @@
-from nomad.config.models.plugins import ParserEntryPoint
-from pydantic import Field
+from nomad.config.models.plugins import (
+    ParserEntryPoint,
+)
 
 
-class NewParserEntryPoint(ParserEntryPoint):
-    parameter: int = Field(0, description='Custom configuration parameter')
-
+class JsonMapperParserEntryPoint(ParserEntryPoint):
     def load(self):
-        from nomad_json_parser.parsers.parser import NewParser
+        from nomad_json_parser.parsers.parser import JsonMapperParser
 
-        return NewParser(**self.model_dump())
+        return JsonMapperParser(**self.dict())
 
 
-parser_entry_point = NewParserEntryPoint(
-    name='NewParser',
-    description='New parser entry point configuration.',
-    mainfile_name_re=r'.*\.newmainfilename',
+json_mapper_parser = JsonMapperParserEntryPoint(
+    name='MapperParser for Json Mapper files',
+    description="""Parser for Json Mapping files.""",
+    mainfile_name_re=r'.+\.json',
+    mainfile_mime_re='application/json',
+    mainfile_contents_re=r'.+json_mapper_class_key',
+)
+
+
+class MappedJsonParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_json_parser.parsers.parser import MappedJsonParser
+
+        return MappedJsonParser(**self.dict())
+
+
+mapped_json_parser = MappedJsonParserEntryPoint(
+    name='JsonParser for Json Mapped files',
+    description="""Parser for Json Mapped files.""",
+    mainfile_name_re=r'.+\.json',
+    mainfile_mime_re='application/json',
+    mainfile_contents_re=r'.+mapped_json_class_key',
 )

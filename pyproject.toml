@@ -25,15 +25,18 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 dependencies = [
-    "nomad-lab>=1.3.0",
+    "nomad-lab>=1.3.16",
     "python-magic-bin; sys_platform == 'win32'",
+    "nomad-material-processing",
 ]
 
 [project.urls]
 Repository = "https://github.com/FAIRmat-NFDI/nomad-json-parser"
 
 [project.optional-dependencies]
-dev = ["ruff", "pytest", "structlog"]
+dev = ["ruff", "pytest", "structlog",
+    "python-logstash>=0.4.6","nomad-lab[dev, infrastructure]"]
+
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
@@ -111,11 +114,12 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [project.entry-points.'nomad.plugin']
-parser_entry_point = "nomad_json_parser.parsers:parser_entry_point"
-schema_package_entry_point = "nomad_json_parser.schema_packages:schema_package_entry_point"
-
-app_entry_point = "nomad_json_parser.apps:app_entry_point"
+json_mapper_schema_package = "nomad_json_parser.schema_packages:json_mapper_schema_package"
+json_mapper_parser = "nomad_json_parser.parsers:json_mapper_parser"
+mapped_json_parser = "nomad_json_parser.parsers:mapped_json_parser"
+example_schema_package = "nomad_json_parser.schema_packages:example_schema_package"
 example_upload_entry_point = "nomad_json_parser.example_uploads:example_upload_entry_point"
+
 [tool.cruft]
 # Avoid updating workflow files, this leads to permissions issues
 skip = [".github/*"]
