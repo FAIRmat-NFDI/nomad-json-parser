@@ -14,7 +14,7 @@ classifiers = [
 ]
 name = "nomad-json-parser"
 description = "A NOMAD parser plugin for parsing json files to entries."
-version = "0.1.0"
+dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -112,6 +112,8 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools_scm]
 
 [project.entry-points.'nomad.plugin']
 json_mapper_schema_package = "nomad_json_parser.schema_packages:json_mapper_schema_package"
