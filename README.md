@@ -1,3 +1,8 @@
+![](https://github.com/FAIRmat-NFDI/nomad-json-parser/actions/workflows/python-publish.yml/badge.svg)
+![](https://img.shields.io/pypi/pyversions/nomad-json-parser)
+![](https://img.shields.io/pypi/l/nomad-json-parser)
+![](https://img.shields.io/pypi/v/nomad-json-parser)
+
 # NOMAD's JSON Mapper plugin
 This is a plugin for [NOMAD](https://nomad-lab.eu) which allows to create mappings from JSON into NOMAD schemas and parse the suitable JSON data files accordingly.
 
