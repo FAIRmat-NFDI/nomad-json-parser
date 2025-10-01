@@ -1,5 +1,5 @@
 {
-    "mapped_json_class_key": "examplemapper",
+    "$mapped_json_class_key": "examplemapper",
     "Mainname": "This is the main name",
     "Sublevels": {"SublevelOne": "This is sublevel 1 name", "Sublevel2name": "This is sublevel 2 name", "Further": {"Sublevel3name": "This is sublevel 3 name"}},
     "Repeating": {"R1": "First section", "R2": "Second section"},

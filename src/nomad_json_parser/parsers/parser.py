@@ -100,7 +100,7 @@ def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912
     main_found = False
     subsections = []
     for key in jsonfile.keys():
-        if key in {'json_mapper_class_key', 'json_mapper_version'}:
+        if key in {'$json_mapper_class_key', '$json_mapper_version'}:
             continue
         subsection = jsonfile[key]
         if 'is_main' in subsection and subsection['is_main'] == 'True':
@@ -163,16 +163,16 @@ class JsonMapperParser(MatchingParser):
                 jsonfile = json.load(file)
 
             try:
-                entry.mapper_key = jsonfile['json_mapper_class_key']
+                entry.mapper_key = jsonfile['$json_mapper_class_key']
                 archive.results.eln.names = [entry.mapper_key]
-                if 'json_mapper_version' in jsonfile.keys():
-                    entry.mapper_version = jsonfile['json_mapper_version']
+                if '$json_mapper_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['$json_mapper_version']
                 else:
                     entry.mapper_version = 1
                 archive.results.eln.tags = [entry.mapper_version]
             except KeyError:
                 logger.error(
-                    'Missing keys for jsonmapper file (json_mapper_class_key).'
+                    'Missing keys for jsonmapper file ($json_mapper_class_key).'
                 )
             logger.info(
                 'Starting search for already existing mappers with\
@@ -284,12 +284,12 @@ class MappedJsonParser(MatchingParser):
                 jsonfile = json.load(file)
 
             try:
-                entry.mapper_key = jsonfile['mapped_json_class_key']
-                if 'mapped_json_version' in jsonfile.keys():
-                    entry.mapper_version = jsonfile['mapped_json_version']
+                entry.mapper_key = jsonfile['$mapped_json_class_key']
+                if '$mapped_json_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['$mapped_json_version']
             except KeyError:
                 logger.error(
-                    'Missing keys for mappedjson file (mapped_json_class_key).'
+                    'Missing keys for mappedjson file ($mapped_json_class_key).'
                 )
 
         logger.info('Starting search for mapper with same key.')

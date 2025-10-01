@@ -1,5 +1,5 @@
 {
-    "json_mapper_class_key": "examplemapper",
+    "$json_mapper_class_key": "examplemapper",
     "main_schema": {
         "is_main": "True",
         "schema": "nomad_json_parser.schema_packages.example.MainLevel",

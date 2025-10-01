@@ -1,5 +1,5 @@
 {
-    "json_mapper_class_key": "CPFSBridgmanTechnique",
+    "$json_mapper_class_key": "CPFSBridgmanTechnique",
     "main_schema": {
         "is_main": "True",
         "schema": "cpfs_synthesis.schema_packages.bridgman.CPFSBridgmanTechnique",

@@ -1,5 +1,5 @@
 {
-    "json_mapper_class_key": "ListTest",
+    "$json_mapper_class_key": "ListTest",
     "main_schema": {
         "is_main": "True",
         "schema": "nomad_ppms_plugin.schema_package.CPFSPPMSACTMeasurement",
