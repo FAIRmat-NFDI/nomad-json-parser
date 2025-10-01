@@ -164,7 +164,7 @@ class JsonMapperParser(MatchingParser):
 
             try:
                 entry.mapper_key = jsonfile['$json_mapper_class_key']
-                archive.results.eln.names = [entry.mapper_key]
+                archive.results.eln.lab_ids = [entry.mapper_key]
                 if '$json_mapper_version' in jsonfile.keys():
                     entry.mapper_version = jsonfile['$json_mapper_version']
                 else:
@@ -183,7 +183,7 @@ class JsonMapperParser(MatchingParser):
                     owner='all',
                     query={
                         'results.eln.sections:any': ['JsonMapper'],
-                        'results.eln.names:any': [entry.mapper_key],
+                        'results.eln.lab_ids:any': [entry.mapper_key],
                         'results.eln.tags:any': [entry.mapper_version],
                     },
                     user_id=archive.metadata.main_author.user_id,
@@ -301,7 +301,7 @@ class MappedJsonParser(MatchingParser):
                     owner='all',
                     query={
                         'results.eln.sections:any': ['JsonMapper'],
-                        'results.eln.names:any': [entry.mapper_key],
+                        'results.eln.lab_ids:any': [entry.mapper_key],
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
