@@ -1,0 +1,25 @@
+{
+    "$json_mapper_class_key": "basesectionexamplemapper",
+    "main_schema": {
+        "is_main": "True",
+        "schema": "nomad.datamodel.metainfo.eln.__init__.ELNMeasurement",
+        "rules": {
+            "title": "name",
+            "What_did_I_do": "method",
+            "location": {
+                "source": "location",
+                "target": "location",
+                "default_value": "MPI CPfS Dresden"
+            }
+        }
+    },
+    "Activity_Step": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.ActivityStep",
+        "main_key": "steps",
+        "repeats": "True",
+        "rules": {
+            "Details.Step_1.step_name": "name",
+            "Details.Step_1.step_description": "description"
+        }
+    }
+}

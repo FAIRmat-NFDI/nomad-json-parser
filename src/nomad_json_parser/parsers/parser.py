@@ -182,9 +182,8 @@ class JsonMapperParser(MatchingParser):
                 search_result = search(
                     owner='all',
                     query={
-                        'results.eln.sections:any': ['JsonMapper'],
-                        'results.eln.lab_ids:any': [entry.mapper_key],
-                        'results.eln.tags:any': [entry.mapper_version],
+                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,
+                        'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_version,
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
@@ -233,6 +232,7 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
 
 def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0913
     mapkey = ''
+    logger.info(mapname)
     for i in range(len(mapper['subsection_mappings'])):
         submap = mapper['subsection_mappings'][i]
         if submap['name'] == mapname:
@@ -300,8 +300,7 @@ class MappedJsonParser(MatchingParser):
                 search_result = search(
                     owner='all',
                     query={
-                        'results.eln.sections:any': ['JsonMapper'],
-                        'results.eln.lab_ids:any': [entry.mapper_key],
+                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
