@@ -2,7 +2,7 @@
     "$json_mapper_class_key": "basesectionexamplemapper",
     "main_schema": {
         "is_main": "True",
-        "schema": "nomad.datamodel.metainfo.eln.__init__.ELNMeasurement",
+        "schema": "nomad.datamodel.metainfo.basesections.v1.Measurement",
         "rules": {
             "title": "name",
             "What_did_I_do": "method",
@@ -13,7 +13,7 @@
             }
         }
     },
-    "Activity_Step": {
+    "Activity_Step1": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.ActivityStep",
         "main_key": "steps",
         "repeats": "True",
@@ -21,5 +21,34 @@
             "Details.Step_1.step_name": "name",
             "Details.Step_1.step_description": "description"
         }
+    },
+    "ProcessStep2": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
+        "main_key": "steps",
+        "repeats": "True",
+        "rules": {
+            "Details.Step_2.step_name": "name",
+            "Details.Step_2.step_description": "description",
+            "Details.Step_2.How_long_did_it_take": "duration",
+            "Details.Step_2.time_unit": "tempunits.duration"
+        }
+    },
+    "Sample": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystemReference",
+        "main_key": "samples",
+        "repeats": "True",
+        "rules": {
+            "Chemicals.name": "name"
+        }
+    },
+    "System": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
+        "main_key": "samples.reference",
+        "is_archive": "True",
+        "rules": {
+            "Chemicals.labid": "lab_id",
+            "Chemicals.substance_formula": "name"
+        }
+
     }
 }

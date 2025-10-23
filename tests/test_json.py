@@ -24,7 +24,7 @@ from nomad.client import normalize_all, parse
 # Test JsonMapper functionality
 
 test_files = [
-    'tests/data/example_mapper.json',
+    'tests/data/basesection_example_mapper.json',
 ]
 log_levels = ['error', 'critical']
 
@@ -44,22 +44,22 @@ def test_normalize_mapper(parsed_mapper_archive, caplog):
     """
     normalize_all(parsed_mapper_archive)
 
-    assert parsed_mapper_archive.data.mapper_key == 'examplemapper'
-    assert len(parsed_mapper_archive.data.subsection_mappings) == 8  # Noqa: PLR2004
+    assert parsed_mapper_archive.data.mapper_key == 'basesectionexamplemapper'
+    assert len(parsed_mapper_archive.data.subsection_mappings) == 4  # Noqa: PLR2004
     assert parsed_mapper_archive.data.main_mapping.name == 'main_schema'
 
 
 def test_mapping_function():
     from nomad_json_parser.parsers.parser import map_with_nesting
 
-    mapper_archive = parse('tests/data/test_mapper.json')[0]
+    mapper_archive = parse('tests/data/basesection_example_mapper.json')[0]
 
     normalize_all(mapper_archive)
 
-    with open('tests/data/example_data.json') as file:
+    with open('tests/data/basesection_example_data.json') as file:
         jsonfile = json.load(file)
 
-    archive = parse('tests/data/example_data.json')[0]
+    archive = parse('tests/data/basesection_example_data.json')[0]
 
     logger = logging.getLogger(__name__)
 
@@ -74,12 +74,10 @@ def test_mapping_function():
         archive_list,
     )
 
-    assert len(result) == 7  # Noqa: PLR2004
-    assert result.repeating[1].string == 'Second section'
-    assert result.nesting.nesting.nesting.string == 'This is sublevel 3 name'
-    assert len(result.list.unit) == 4  # Noqa: PLR2004
-    assert result.unit.unit.magnitude == 0.01  # Noqa: PLR2004
-    assert result.unit.unit.units == 'meter'
+    assert len(result) == 10  # Noqa: PLR2004
+    assert result.steps[1].name == 'Stirring'
+    assert result.steps[1].duration.magnitude == 300  # Noqa: PLR2004
+    assert result.steps[1].duration.units == 'second'
 
 
 def test_normalize_mapped():
@@ -90,8 +88,8 @@ def test_normalize_mapped():
         parsed_archive (pytest.fixture): Fixture to handle the parsing of archive.
         caplog (pytest.fixture): Fixture to capture errors from the logger.
     """
-    test_files = 'tests/data/example_data.json'
+    test_files = 'tests/data/basesection_example_data.json'
 
     entry_archive = parse(test_files)[0]
 
-    assert entry_archive.data.mapper_key == 'examplemapper'
+    assert entry_archive.data.mapper_key == 'basesectionexamplemapper'

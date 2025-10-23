@@ -182,8 +182,8 @@ class JsonMapperParser(MatchingParser):
                 search_result = search(
                     owner='all',
                     query={
-                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,
-                        'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_version,
+                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
+                        'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_version,  # noqa: E501
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
@@ -233,38 +233,40 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
 def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0913
     mapkey = ''
     logger.info(mapname)
-    for i in range(len(mapper['subsection_mappings'])):
-        submap = mapper['subsection_mappings'][i]
-        if submap['name'] == mapname:
-            mapkey = submap['main_key']
-            subclass = transform_subclass(submap, logger, jsonfile)
+    if 'subsection_mappings' in mapper.keys():
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if submap['name'] == mapname:
+                mapkey = submap['main_key']
+                subclass = transform_subclass(submap, logger, jsonfile)
     mapkey_parent = mapkey + '.'
     if mapkey == '':
         subclass = transform_subclass(mapper['main_mapping'], logger, jsonfile)
-    for i in range(len(mapper['subsection_mappings'])):
-        submap = mapper['subsection_mappings'][i]
-        shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
-        if mapkey == '':
-            mapkey_parent = ''
-        if (
-            submap['main_key'].startswith(mapkey_parent)
-            and '.' not in shortened_mainkey
-        ):
-            subsubclass = map_with_nesting(
-                mapper, submap['name'], logger, archive, jsonfile, archive_list
-            )
-            if 'is_archive' in submap.keys() and submap['is_archive']:
-                sub_ref = create_archive(
-                    subsubclass,
-                    archive,
-                    subsubclass.name + '.archive.json',
+    if 'subsection_mappings' in mapper.keys():
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
+            if mapkey == '':
+                mapkey_parent = ''
+            if (
+                submap['main_key'].startswith(mapkey_parent)
+                and '.' not in shortened_mainkey
+            ):
+                subsubclass = map_with_nesting(
+                    mapper, submap['name'], logger, archive, jsonfile, archive_list
                 )
-                archive_list.append(sub_ref)
-                setattr(subclass, shortened_mainkey, sub_ref)
-            elif 'repeats' in submap.keys() and submap['repeats']:
-                subclass[shortened_mainkey].append(subsubclass)
-            else:
-                setattr(subclass, shortened_mainkey, subsubclass)
+                if 'is_archive' in submap.keys() and submap['is_archive']:
+                    sub_ref = create_archive(
+                        subsubclass,
+                        archive,
+                        subsubclass.name + '.archive.json',
+                    )
+                    archive_list.append(sub_ref)
+                    setattr(subclass, shortened_mainkey, sub_ref)
+                elif 'repeats' in submap.keys() and submap['repeats']:
+                    subclass[shortened_mainkey].append(subsubclass)
+                else:
+                    setattr(subclass, shortened_mainkey, subsubclass)
     return subclass
 
 
@@ -300,7 +302,7 @@ class MappedJsonParser(MatchingParser):
                 search_result = search(
                     owner='all',
                     query={
-                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,
+                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )

@@ -1,92 +1,54 @@
 {
-    "json_mapper_class_key": "examplemapper",
+    "$json_mapper_class_key": "basesectionexamplemapper",
     "main_schema": {
         "is_main": "True",
-        "schema": "nomad_json_parser.schema_packages.example.MainLevel",
+        "schema": "nomad.datamodel.metainfo.basesections.v1.Measurement",
         "rules": {
-            "ID":{
-                "source": "Mainname",
-                "target": "string"
-            },
-            "name": {
-                "source": "Main_name_real",
-                "target": "name",
-                "default_value": "default_name"
+            "title": "name",
+            "What_did_I_do": "method",
+            "location": {
+                "source": "location",
+                "target": "location",
+                "default_value": "MPI CPfS Dresden"
             }
         }
     },
-    "Sublevel1": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevel1",
-        "main_key": "nesting",
-        "rules": {
-            "ID":{
-                "source": "Sublevels.SublevelOne",
-                "target": "string"
-            }
-        }
-    },
-    "Sublevel2": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevel2",
-        "main_key": "nesting.nesting",
-        "rules": {
-            "ID":{
-                "source": "Sublevels.Sublevel2name",
-                "target": "string"
-            },
-            "IDfd":{
-                "source": "Sublevels.Sublevel2name",
-                "target": "name"
-            }
-        }
-    },
-    "Sublevel3": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevel3",
-        "main_key": "nesting.nesting.nesting",
-        "rules": {
-            "ID":{
-                "source": "Sublevels.Further.Sublevel3name",
-                "target": "string"
-            }
-        }
-    },
-    "Repeating1": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevelRepeating",
-        "main_key": "repeating",
+    "Activity_Step1": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.ActivityStep",
+        "main_key": "steps",
         "repeats": "True",
         "rules": {
-            "Repeating.R1": "string"
+            "Details.Step_1.step_name": "name",
+            "Details.Step_1.step_description": "description"
         }
     },
-    "Repeating2": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevelRepeating",
-        "main_key": "repeating",
+    "ProcessStep2": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
+        "main_key": "steps",
         "repeats": "True",
         "rules": {
-            "Repeating.R2": "string"
+            "Details.Step_2.step_name": "name",
+            "Details.Step_2.step_description": "description",
+            "Details.Step_2.How_long_did_it_take": "duration",
+            "Details.Step_2.time_unit": "tempunits.duration"
         }
     },
-    "Unit": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevelUnit",
-        "main_key": "unit",
+    "Sample": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystemReference",
+        "main_key": "samples",
+        "repeats": "True",
         "rules": {
-            "value": "unit",
-            "unit": "tempunits.unit"
+            "Chemicals.name": "name"
         }
     },
-    "List": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevelList",
-        "main_key": "list",
-        "rules": {
-            "value_list": "unit",
-            "value_unit": "tempunits.unit"
-        }
-    },
-    "Reference": {
-        "schema": "nomad_json_parser.schema_packages.example.SubLevelReference",
-        "main_key": "reference",
+    "System": {
+        "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
+        "main_key": "samples.reference",
         "is_archive": "True",
         "rules": {
-            "reference_name": "name"
+            "Chemicals.labid": "lab_id",
+            "Chemicals.substance_formula": "name"
         }
+
     }
 }

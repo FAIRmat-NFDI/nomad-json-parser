@@ -1,11 +1,22 @@
 {
-    "mapped_json_class_key": "examplemapper",
-    "Mainname": "This is the main name",
-    "Sublevels": {"SublevelOne": "This is sublevel 1 name", "Sublevel2name": "This is sublevel 2 name", "Further": {"Sublevel3name": "This is sublevel 3 name"}},
-    "Repeating": {"R1": "First section", "R2": "Second section"},
-    "value": 1,
-    "unit": "cm",
-    "value_list": [1,3.4,1.5,2.6],
-    "value_unit": "g",
-    "reference_name": "This is the reference name"
+    "$mapped_json_class_key": "basesectionexamplemapper",
+    "title": "Create NaCl solution",
+    "What_did_I_do": "Solution by stirring",
+    "Details": {
+        "Step_1": {
+            "step_name": "NaCl into H2O",
+            "step_description": "Put NaCl into H2O"
+        },
+        "Step_2": {
+            "step_name": "Stirring",
+            "step_description": "Stir clockwise",
+            "How_long_did_it_take": 300.0,
+            "time_unit": "seconds"
+        }
+    },
+    "Chemicals": {
+        "name": "Rocksalt",
+        "labid": "JN123_NaCl",
+        "substance_formula": "NaCl"
+    }
 }
