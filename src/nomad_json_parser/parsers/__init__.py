@@ -14,7 +14,7 @@ json_mapper_parser = JsonMapperParserEntryPoint(
     name='MapperParser for Json Mapper files',
     description="""Parser for Json Mapping files.""",
     mainfile_name_re=r'.+\.json',
-    mainfile_mime_re='application/json',
+    #mainfile_mime_re='application/json',
     mainfile_contents_dict={'__has_key': r'\$json_mapper_class_key'},
 )
 
@@ -30,6 +30,6 @@ mapped_json_parser = MappedJsonParserEntryPoint(
     name='JsonParser for Json Mapped files',
     description="""Parser for Json Mapped files.""",
     mainfile_name_re=r'.+\.json',
-    mainfile_mime_re='application/json',
+    #mainfile_mime_re='application/json',
     mainfile_contents_dict={'__has_key': r'\$mapped_json_class_key'},
 )
