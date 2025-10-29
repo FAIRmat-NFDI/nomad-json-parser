@@ -36,7 +36,10 @@ from nomad.datamodel.metainfo.annotations import (
     Rules,
 )
 from nomad.datamodel.results import ELN, Results
-from nomad.search import search
+from nomad.search import (
+    MetadataPagination,
+    search,
+)
 from nomad.utils.json_transformer import Transformer
 from nomad_material_processing.utils import create_archive
 
@@ -296,48 +299,44 @@ class MappedJsonParser(MatchingParser):
 
         logger.info('Starting search for mapper with same key.')
         if not isinstance(archive.m_context, ClientContext):
+            query = {
+                'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
+            }
+            if entry.mapper_version:
+                logger.info(
+                    f'Searching for mapper with version {entry.mapper_version}.'
+                )
+                query[
+                    'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper'
+                ] = entry.mapper_version
+            else:
+                logger.info('Searching for mapper with latest version.')
             numberofretries = 5
             for count in range(numberofretries):
                 logger.info(f'Starting search loop {count}.')
                 search_result = search(
                     owner='all',
-                    query={
-                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
-                    },
+                    query=query,
+                    pagination=MetadataPagination(
+                        page_size=1,
+                        order='desc',
+                        order_by='data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper',
+                    ),
                     user_id=archive.metadata.main_author.user_id,
                 )
-                if len(search_result.data) > 0:
-                    logger.info(f'Found {len(search_result.data)} suitable mappers.')
-                    versionlist = []
-                    for map in search_result.data:
-                        versionlist.append(map['data']['mapper_version'])
-                    if not list(set(versionlist)) == sorted(versionlist):
-                        logger.error('Mapper version exists more than once.')
-                    if entry.mapper_version:
-                        logger.info(
-                            f'Taking mapper with version {entry.mapper_version}.'
-                        )
-                        if entry.mapper_version in versionlist:
-                            mapper_result = search_result.data[
-                                versionlist.index(entry.mapper_version)
-                            ]
-                        else:
-                            logger.error(
-                                f'Mapper with version {entry.mapper_version} not found.'
-                            )
-                    else:
-                        logger.info(
-                            f'Taking mapper with latest version. It is {max(versionlist)}.'  # noqa: E501
-                        )
-                        mapper_result = search_result.data[
-                            versionlist.index(max(versionlist))
-                        ]
+                if len(search_result.data) > 1:
+                    logger.error(
+                        'Found more than one suitable mapper. This can not be.'
+                    )
+                elif len(search_result.data) == 0:
+                    logger.warning('Found no matching mapper.')
+                elif len(search_result.data) == 1:
+                    mapper_result = search_result.data[0]
                     upload_id = mapper_result['upload_id']
                     entry_id = mapper_result['entry_id']
                     entry.mapper_reference = (
                         f'../uploads/{upload_id}/archive/{entry_id}#data'
                     )
-
                     mapper = mapper_result['data']
                     break
                 time.sleep(5)
