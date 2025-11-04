@@ -2,7 +2,7 @@
     "$json_mapper_class_key": "basesectionexamplemapper",
     "main_schema": {
         "is_main": "True",
-        "schema": "nomad.datamodel.metainfo.basesections.v1.Measurement",
+        "schema": "nomad.datamodel.metainfo.basesections.v1.Process",
         "rules": {
             "title": "name",
             "What_did_I_do": "method",
@@ -14,7 +14,7 @@
         }
     },
     "Activity_Step1": {
-        "schema": "nomad.datamodel.metainfo.basesections.v1.ActivityStep",
+        "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
         "main_key": "steps",
         "repeats": "True",
         "rules": {
