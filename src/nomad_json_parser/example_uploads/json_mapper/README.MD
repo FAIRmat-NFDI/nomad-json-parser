@@ -7,9 +7,9 @@ This is an example of a mapping from a JSON file to a NOMAD schema. Firstly, a m
 Below, you find an overview of your uploaded data.
 Click on the `> /` button to get a list of your data or select **FILES** from the top menu of this upload.
 
-The `example_mapper.json` contains the `json_mapper_class_key` against which the data files are tested later on. Additionally, it defines the classes used in the NOMAD schema and contains the rules how to map between the data JSON and the schema. The mapping rules follow the ones of the [NOMAD Transformer](https://nomad-lab.eu/prod/v1/docs/howto/programmatic/json_transformer.html).
+The `example_mapper.json` contains the `$json_mapper_class_key` against which the data files are tested later on. Additionally, it defines the classes used in the NOMAD schema and contains the rules how to map between the data JSON and the schema. The mapping rules follow the ones of the [NOMAD Transformer](https://nomad-lab.eu/prod/v1/docs/howto/programmatic/json_transformer.html).
 
-The `example_data.json` contains the `mapped_json_class_key` to identify the suitable mapper and all data that should be mapped into the NOMAD schema.
+The `example_data.json` contains the `$mapped_json_class_key` to identify the suitable mapper and all data that should be mapped into the NOMAD schema.
 
 You can create your own mapper and data files and try them out here or in separate uploads.
 

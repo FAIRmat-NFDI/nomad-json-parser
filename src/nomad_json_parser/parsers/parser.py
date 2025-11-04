@@ -36,7 +36,10 @@ from nomad.datamodel.metainfo.annotations import (
     Rules,
 )
 from nomad.datamodel.results import ELN, Results
-from nomad.search import search
+from nomad.search import (
+    MetadataPagination,
+    search,
+)
 from nomad.utils.json_transformer import Transformer
 from nomad_material_processing.utils import create_archive
 
@@ -100,7 +103,7 @@ def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912
     main_found = False
     subsections = []
     for key in jsonfile.keys():
-        if key in {'json_mapper_class_key', 'json_mapper_version'}:
+        if key in {'$json_mapper_class_key', '$json_mapper_version'}:
             continue
         subsection = jsonfile[key]
         if 'is_main' in subsection and subsection['is_main'] == 'True':
@@ -163,16 +166,16 @@ class JsonMapperParser(MatchingParser):
                 jsonfile = json.load(file)
 
             try:
-                entry.mapper_key = jsonfile['json_mapper_class_key']
-                archive.results.eln.names = [entry.mapper_key]
-                if 'json_mapper_version' in jsonfile.keys():
-                    entry.mapper_version = jsonfile['json_mapper_version']
+                entry.mapper_key = jsonfile['$json_mapper_class_key']
+                archive.results.eln.lab_ids = [entry.mapper_key]
+                if '$json_mapper_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['$json_mapper_version']
                 else:
                     entry.mapper_version = 1
                 archive.results.eln.tags = [entry.mapper_version]
             except KeyError:
                 logger.error(
-                    'Missing keys for jsonmapper file (json_mapper_class_key).'
+                    'Missing keys for jsonmapper file ($json_mapper_class_key).'
                 )
             logger.info(
                 'Starting search for already existing mappers with\
@@ -182,9 +185,8 @@ class JsonMapperParser(MatchingParser):
                 search_result = search(
                     owner='all',
                     query={
-                        'results.eln.sections:any': ['JsonMapper'],
-                        'results.eln.names:any': [entry.mapper_key],
-                        'results.eln.tags:any': [entry.mapper_version],
+                        'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
+                        'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_version,  # noqa: E501
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
@@ -233,38 +235,41 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
 
 def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0913
     mapkey = ''
-    for i in range(len(mapper['subsection_mappings'])):
-        submap = mapper['subsection_mappings'][i]
-        if submap['name'] == mapname:
-            mapkey = submap['main_key']
-            subclass = transform_subclass(submap, logger, jsonfile)
+    logger.info(mapname)
+    if 'subsection_mappings' in mapper.keys():
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if submap['name'] == mapname:
+                mapkey = submap['main_key']
+                subclass = transform_subclass(submap, logger, jsonfile)
     mapkey_parent = mapkey + '.'
     if mapkey == '':
         subclass = transform_subclass(mapper['main_mapping'], logger, jsonfile)
-    for i in range(len(mapper['subsection_mappings'])):
-        submap = mapper['subsection_mappings'][i]
-        shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
-        if mapkey == '':
-            mapkey_parent = ''
-        if (
-            submap['main_key'].startswith(mapkey_parent)
-            and '.' not in shortened_mainkey
-        ):
-            subsubclass = map_with_nesting(
-                mapper, submap['name'], logger, archive, jsonfile, archive_list
-            )
-            if 'is_archive' in submap.keys() and submap['is_archive']:
-                sub_ref = create_archive(
-                    subsubclass,
-                    archive,
-                    subsubclass.name + '.archive.json',
+    if 'subsection_mappings' in mapper.keys():
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
+            if mapkey == '':
+                mapkey_parent = ''
+            if (
+                submap['main_key'].startswith(mapkey_parent)
+                and '.' not in shortened_mainkey
+            ):
+                subsubclass = map_with_nesting(
+                    mapper, submap['name'], logger, archive, jsonfile, archive_list
                 )
-                archive_list.append(sub_ref)
-                setattr(subclass, shortened_mainkey, sub_ref)
-            elif 'repeats' in submap.keys() and submap['repeats']:
-                subclass[shortened_mainkey].append(subsubclass)
-            else:
-                setattr(subclass, shortened_mainkey, subsubclass)
+                if 'is_archive' in submap.keys() and submap['is_archive']:
+                    sub_ref = create_archive(
+                        subsubclass,
+                        archive,
+                        subsubclass.name + '.archive.json',
+                    )
+                    archive_list.append(sub_ref)
+                    setattr(subclass, shortened_mainkey, sub_ref)
+                elif 'repeats' in submap.keys() and submap['repeats']:
+                    subclass[shortened_mainkey].append(subsubclass)
+                else:
+                    setattr(subclass, shortened_mainkey, subsubclass)
     return subclass
 
 
@@ -284,59 +289,54 @@ class MappedJsonParser(MatchingParser):
                 jsonfile = json.load(file)
 
             try:
-                entry.mapper_key = jsonfile['mapped_json_class_key']
-                if 'mapped_json_version' in jsonfile.keys():
-                    entry.mapper_version = jsonfile['mapped_json_version']
+                entry.mapper_key = jsonfile['$mapped_json_class_key']
+                if '$mapped_json_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['$mapped_json_version']
             except KeyError:
                 logger.error(
-                    'Missing keys for mappedjson file (mapped_json_class_key).'
+                    'Missing keys for mappedjson file ($mapped_json_class_key).'
                 )
 
         logger.info('Starting search for mapper with same key.')
         if not isinstance(archive.m_context, ClientContext):
+            query = {
+                'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
+            }
+            if entry.mapper_version:
+                logger.info(
+                    f'Searching for mapper with version {entry.mapper_version}.'
+                )
+                query[
+                    'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper'
+                ] = entry.mapper_version
+            else:
+                logger.info('Searching for mapper with latest version.')
             numberofretries = 5
             for count in range(numberofretries):
                 logger.info(f'Starting search loop {count}.')
                 search_result = search(
                     owner='all',
-                    query={
-                        'results.eln.sections:any': ['JsonMapper'],
-                        'results.eln.names:any': [entry.mapper_key],
-                    },
+                    query=query,
+                    pagination=MetadataPagination(
+                        page_size=1,
+                        order='desc',
+                        order_by='data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper',
+                    ),
                     user_id=archive.metadata.main_author.user_id,
                 )
-                if len(search_result.data) > 0:
-                    logger.info(f'Found {len(search_result.data)} suitable mappers.')
-                    versionlist = []
-                    for map in search_result.data:
-                        versionlist.append(map['data']['mapper_version'])
-                    if not list(set(versionlist)) == sorted(versionlist):
-                        logger.error('Mapper version exists more than once.')
-                    if entry.mapper_version:
-                        logger.info(
-                            f'Taking mapper with version {entry.mapper_version}.'
-                        )
-                        if entry.mapper_version in versionlist:
-                            mapper_result = search_result.data[
-                                versionlist.index(entry.mapper_version)
-                            ]
-                        else:
-                            logger.error(
-                                f'Mapper with version {entry.mapper_version} not found.'
-                            )
-                    else:
-                        logger.info(
-                            f'Taking mapper with latest version. It is {max(versionlist)}.'  # noqa: E501
-                        )
-                        mapper_result = search_result.data[
-                            versionlist.index(max(versionlist))
-                        ]
+                if len(search_result.data) > 1:
+                    logger.error(
+                        'Found more than one suitable mapper. This can not be.'
+                    )
+                elif len(search_result.data) == 0:
+                    logger.warning('Found no matching mapper.')
+                elif len(search_result.data) == 1:
+                    mapper_result = search_result.data[0]
                     upload_id = mapper_result['upload_id']
                     entry_id = mapper_result['entry_id']
                     entry.mapper_reference = (
                         f'../uploads/{upload_id}/archive/{entry_id}#data'
                     )
-
                     mapper = mapper_result['data']
                     break
                 time.sleep(5)
