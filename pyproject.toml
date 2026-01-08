@@ -14,7 +14,7 @@ classifiers = [
 ]
 name = "nomad-json-parser"
 description = "A NOMAD parser plugin for parsing json files to entries."
-version = "0.1.0"
+dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -25,15 +25,18 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 dependencies = [
-    "nomad-lab>=1.3.0",
+    "nomad-lab>=1.3.16",
     "python-magic-bin; sys_platform == 'win32'",
+    "nomad-material-processing",
 ]
 
 [project.urls]
 Repository = "https://github.com/FAIRmat-NFDI/nomad-json-parser"
 
 [project.optional-dependencies]
-dev = ["ruff", "pytest", "structlog"]
+dev = ["ruff", "pytest", "structlog",
+    "python-logstash>=0.4.6","nomad-lab[dev, infrastructure]"]
+
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
@@ -110,11 +113,13 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools_scm]
+
 [project.entry-points.'nomad.plugin']
-jsonmapper_entry = "nomad_json_parser:jsonmapper_entry"
-jsonmapper_parser = "nomad_json_parser:jsonmapper_parser"
-mappedjson_entry = "nomad_json_parser:mappedjson_entry"
-mappedjson_parser = "nomad_json_parser:mappedjson_parser"
+json_mapper_schema_package = "nomad_json_parser.schema_packages:json_mapper_schema_package"
+json_mapper_parser = "nomad_json_parser.parsers:json_mapper_parser"
+mapped_json_parser = "nomad_json_parser.parsers:mapped_json_parser"
+example_upload_entry_point = "nomad_json_parser.example_uploads:example_upload_entry_point"
 
 [tool.cruft]
 # Avoid updating workflow files, this leads to permissions issues
