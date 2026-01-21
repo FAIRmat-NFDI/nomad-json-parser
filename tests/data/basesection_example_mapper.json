@@ -13,24 +13,16 @@
             }
         }
     },
-    "Activity_Step1": {
+    "Steps": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
         "main_key": "steps",
         "repeats": "True",
+        "repeat_paths": ["Details.Step_1", "Details.Step_2"],
         "rules": {
-            "Details.Step_1.step_name": "name",
-            "Details.Step_1.step_description": "description"
-        }
-    },
-    "ProcessStep2": {
-        "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
-        "main_key": "steps",
-        "repeats": "True",
-        "rules": {
-            "Details.Step_2.step_name": "name",
-            "Details.Step_2.step_description": "description",
-            "Details.Step_2.How_long_did_it_take": "duration",
-            "Details.Step_2.time_unit": "tempunits.duration"
+            ".step_name": "name",
+            ".step_description": "description",
+            ".How_long_did_it_take": "duration",
+            ".time_unit": "tempunits.duration"
         }
     },
     "Sample": {

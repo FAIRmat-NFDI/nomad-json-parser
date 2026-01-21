@@ -115,6 +115,11 @@ class SubSectionMapper(MainMapper):
         type=bool,
         description='Marks a repeatable Subsection, attaches to existing list.',
     )
+    repeat_paths = Quantity(
+        type=str,
+        shape=['*'],
+        description='Gives paths to repeatable subsections in the data json.',
+    )
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
