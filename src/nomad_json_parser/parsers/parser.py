@@ -290,30 +290,47 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
 
 def expand_mapper(mapper):
     if 'subsection_mappings' in mapper.keys():
+        used_subsections = []
         newsubmappings = []
         for i in range(len(mapper['subsection_mappings'])):
             submap = mapper['subsection_mappings'][i]
             if 'repeat_paths' in submap and len(submap['repeat_paths']) > 0:
                 for path in submap['repeat_paths']:
                     repeatmap = deepcopy(submap)
-                    repeatmap['name'] = submap['name'] + path['name']
+                    repeatmap['name'] = path['name'] + '__$' + submap['name']
                     for rule in repeatmap['rules']:
                         rule['source'] = '.'.join([path['name'], rule['source']])
                     newsubmappings.append(repeatmap)
-            else:
+                    for j in range(len(mapper['subsection_mappings'])):
+                        if j == i:
+                            continue
+                        subsubmap = mapper['subsection_mappings'][j]
+                        if subsubmap['main_key'].startswith(submap['main_key']):
+                            repeatmap = deepcopy(subsubmap)
+                            repeatmap['name'] = path['name'] + '__$' + subsubmap['name']
+                            for rule in repeatmap['rules']:
+                                rule['source'] = '.'.join(
+                                    [path['name'], rule['source']]
+                                )
+                            newsubmappings.append(repeatmap)
+                            used_subsections.append(j)
+            elif i not in used_subsections:
                 newsubmappings.append(submap)
         mapper['subsection_mappings'] = newsubmappings
     return mapper
 
 
-def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0913
+def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0912, PLR0913
     mapkey = ''
+    repeat_path = False
     logger.info(mapname)
     if 'subsection_mappings' in mapper.keys():
         for i in range(len(mapper['subsection_mappings'])):
             submap = mapper['subsection_mappings'][i]
             if submap['name'] == mapname:
                 mapkey = submap['main_key']
+                if 'repeat_paths' in submap:
+                    repeat_path = True
                 subclass = transform_subclass(submap, logger, jsonfile)
     mapkey_parent = mapkey + '.'
     if mapkey == '':
@@ -328,6 +345,11 @@ def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list): 
                 submap['main_key'].startswith(mapkey_parent)
                 and '.' not in shortened_mainkey
             ):
+                if (
+                    repeat_path
+                    and not mapname.split('__$')[0] == submap['name'].split('__$')[0]
+                ):
+                    continue
                 subsubclass = map_with_nesting(
                     mapper, submap['name'], logger, archive, jsonfile, archive_list
                 )
@@ -419,15 +441,9 @@ class MappedJsonParser(MatchingParser):
             else:
                 logger.error('No mapper was found.')
 
-            logger.info(mapper)
-
             mapper = resolve_dynamical_mapper_paths(mapper, jsonfile)
 
-            logger.info(mapper)
-
             mapper_expanded = expand_mapper(mapper)
-
-            logger.info(mapper_expanded)
 
             archive_list = []
             mainclass = map_with_nesting(

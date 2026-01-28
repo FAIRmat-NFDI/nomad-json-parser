@@ -30,9 +30,16 @@
             "step_name": "Stirring",
             "step_description": "Stir clockwise3"
     },
-    "Chemicals": {
+    "Chem": {
+    "Chemicals1": {
         "name": "Rocksalt",
         "labid": "JN123_NaCl",
         "substance_formula": "NaCl"
+    },
+    "Chemicals2": {
+        "name": "Gold",
+        "labid": "JN123_Au",
+        "substance_formula": "Au"
     }
+}
 }

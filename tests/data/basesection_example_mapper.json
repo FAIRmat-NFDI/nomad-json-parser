@@ -29,8 +29,9 @@
         "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystemReference",
         "main_key": "samples",
         "repeats": "True",
+        "repeat_paths": ["Chem.*"],
         "rules": {
-            "Chemicals.name": "name"
+            "name": "name"
         }
     },
     "System": {
@@ -38,8 +39,8 @@
         "main_key": "samples.reference",
         "is_archive": "True",
         "rules": {
-            "Chemicals.labid": "lab_id",
-            "Chemicals.substance_formula": "name"
+            "labid": "lab_id",
+            "substance_formula": "name"
         }
 
     }
