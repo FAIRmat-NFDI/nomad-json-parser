@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 import json
 import time
+from copy import deepcopy
 
 from nomad.datamodel import ClientContext, EntryArchive
 from nomad.datamodel.metainfo.annotations import (
@@ -38,6 +39,7 @@ from nomad.datamodel.metainfo.annotations import (
 from nomad.datamodel.results import ELN, Results
 from nomad.search import (
     MetadataPagination,
+    MetadataRequired,
     search,
 )
 from nomad.utils.json_transformer import Transformer
@@ -48,6 +50,7 @@ from nomad_json_parser.schema_packages.jsonimport import (
     MainMapper,
     MappedJson,
     MapperRule,
+    RepeatPath,
     RuleCondition,
     SubSectionMapper,
     createrulesjson,
@@ -129,7 +132,12 @@ def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912, PLR0915
             if 'repeats' in subsection:
                 sectionclass.repeats = subsection['repeats']
                 if 'repeat_paths' in subsection:
-                    sectionclass.repeat_paths = subsection['repeat_paths']
+                    repeat_paths = []
+                    for path in subsection['repeat_paths']:
+                        repeat = RepeatPath()
+                        repeat.name = path
+                        repeat_paths.append(repeat)
+                    sectionclass.repeat_paths = repeat_paths
             if 'repeat_paths' in subsection and 'repeats' not in subsection:
                 logger.warning(
                     'repeat_paths found but not repeats, ignoring repeat_paths.'
@@ -140,33 +148,15 @@ def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912, PLR0915
         except KeyError:
             logger.error(f'schema is missing from Subsection {key}.')
         sectionclass.rules = create_rules(subsection, key, logger)
-        if 'repeat_paths' in subsection and 'repeats' in subsection:
-            sectionlist = []
-            for path in subsection['repeat_paths']:
-                repeatsection = SubSectionMapper()
-                repeatsection.name = sectionclass.name + path
-                repeatsection.is_archive = sectionclass.is_archive
-                repeatsection.path_to_schema = sectionclass.path_to_schema
-                repeatsection.main_key = sectionclass.main_key
-                repeatsection.repeats = sectionclass.repeats
-                repeatsection.repeat_paths = sectionclass.repeat_paths
-                repeatsection.rules = create_rules(subsection, key, logger)
-                for rule in repeatsection.rules:
-                    rule.source = path + rule.source
-                    rule.name = path + rule.name
-                repeatsection.normalize(archive, logger)
-                sectionlist.append(repeatsection)
-            subsections += sectionlist
-        else:
-            sectionclass.normalize(archive, logger)
-            if 'is_main' in subsection:
-                if not main_found:
-                    main_mapping = sectionclass
-                    main_found = True
-                else:
-                    logger.error('is_main can only be in one Subsection.')
+        sectionclass.normalize(archive, logger)
+        if 'is_main' in subsection:
+            if not main_found:
+                main_mapping = sectionclass
+                main_found = True
             else:
-                subsections.append(sectionclass)
+                logger.error('is_main can only be in one Subsection.')
+        else:
+            subsections.append(sectionclass)
     return main_mapping, subsections
 
 
@@ -215,7 +205,7 @@ class JsonMapperParser(MatchingParser):
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
-                if len(search_result.data) > 0:
+                if len(search_result.data) > 1:
                     logger.error(
                         'At least one mapper with the same key and\
                               version has been found.'
@@ -256,6 +246,64 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
                 subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
             )
     return subclass
+
+
+def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
+    if 'subsection_mappings' in mapper.keys():
+        newsubmappings = []
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if 'repeat_paths' in submap and len(submap['repeat_paths']) > 0:
+                newrepeatpath = []
+                for path in submap['repeat_paths']:
+                    if '*' in path['name']:
+                        frontkey = path['name'].split('*')[0].strip('.')
+                        backkey = path['name'].split('*')[1].strip('.')
+                        iteratedjson = dict(jsonfile)
+                        if frontkey:
+                            for j in range(len(frontkey.split('.'))):
+                                iteratedjson = iteratedjson[frontkey.split('.')[j]]
+                        for key in iteratedjson.keys():
+                            backjson = dict(iteratedjson[key])
+                            keyisvalid = True
+                            if backkey:
+                                for j in range(len(backkey.split('.'))):
+                                    backjson = backjson[backkey.split('.')[j]]
+                            for rule in submap['rules']:
+                                if rule['source'] not in backjson:
+                                    keyisvalid = False
+                            if keyisvalid:
+                                newpath = deepcopy(path)
+                                newpath['name'] = key
+                                if frontkey:
+                                    newpath['name'] = frontkey + '.' + newpath['name']
+                                if backkey:
+                                    newpath['name'] = newpath['name'] + '.' + backkey
+                                newrepeatpath.append(newpath)
+                    else:
+                        newrepeatpath.append(path)
+                submap['repeat_paths'] = newrepeatpath
+            newsubmappings.append(submap)
+        mapper['subsection_mappings'] = newsubmappings
+    return mapper
+
+
+def expand_mapper(mapper):
+    if 'subsection_mappings' in mapper.keys():
+        newsubmappings = []
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if 'repeat_paths' in submap and len(submap['repeat_paths']) > 0:
+                for path in submap['repeat_paths']:
+                    repeatmap = deepcopy(submap)
+                    repeatmap['name'] = submap['name'] + path['name']
+                    for rule in repeatmap['rules']:
+                        rule['source'] = '.'.join([path['name'], rule['source']])
+                    newsubmappings.append(repeatmap)
+            else:
+                newsubmappings.append(submap)
+        mapper['subsection_mappings'] = newsubmappings
+    return mapper
 
 
 def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list):  # noqa: PLR0913
@@ -302,7 +350,7 @@ class MappedJsonParser(MatchingParser):
     def set_entrydata_definition(self):
         self.entrydata_definition = MappedJson
 
-    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
         self.set_entrydata_definition()
         data_file = mainfile.split('/')[-1]
         data_file_with_path = mainfile.split('raw/')[-1]
@@ -342,6 +390,9 @@ class MappedJsonParser(MatchingParser):
                 search_result = search(
                     owner='all',
                     query=query,
+                    required=MetadataRequired(
+                        include=['data*', 'upload_id', 'entry_id']
+                    ),
                     pagination=MetadataPagination(
                         page_size=1,
                         order='desc',
@@ -368,10 +419,20 @@ class MappedJsonParser(MatchingParser):
             else:
                 logger.error('No mapper was found.')
 
+            logger.info(mapper)
+
+            mapper = resolve_dynamical_mapper_paths(mapper, jsonfile)
+
+            logger.info(mapper)
+
+            mapper_expanded = expand_mapper(mapper)
+
+            logger.info(mapper_expanded)
+
             archive_list = []
             mainclass = map_with_nesting(
-                mapper,
-                mapper['main_mapping']['name'],
+                mapper_expanded,
+                mapper_expanded['main_mapping']['name'],
                 logger,
                 archive,
                 jsonfile,
