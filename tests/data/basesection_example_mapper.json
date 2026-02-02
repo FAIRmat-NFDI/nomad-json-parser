@@ -17,7 +17,7 @@
         "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
         "main_key": "steps",
         "repeats": "True",
-        "repeat_paths": ["Details.*.Steps","Step_3"],
+        "repeat_paths": ["*.Steps","Step_3"],
         "rules": {
             "step_name": "name",
             "step_description": "comment",

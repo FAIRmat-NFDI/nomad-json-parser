@@ -2,7 +2,6 @@
     "$mapped_json_class_key": "basesectionexamplemapper",
     "title": "Create NaCl solution",
     "What_did_I_do": "Solution by stirring",
-    "Details": {
         "Step_1": {
             "Steps": {
                 "step_name": "NaCl into H2O",
@@ -18,8 +17,7 @@
                 "How_long_did_it_take": 300.0,
                 "time_unit": "seconds"
             }
-        }
-    },
+        },
     "Step_3": {
             "step_name": "Stirring",
             "step_description": "Stir clockwise2",

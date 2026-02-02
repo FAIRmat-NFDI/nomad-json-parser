@@ -264,11 +264,18 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
                             for j in range(len(frontkey.split('.'))):
                                 iteratedjson = iteratedjson[frontkey.split('.')[j]]
                         for key in iteratedjson.keys():
-                            backjson = dict(iteratedjson[key])
+                            try:
+                                backjson = dict(iteratedjson[key])
+                            except ValueError:
+                                continue
                             keyisvalid = True
                             if backkey:
                                 for j in range(len(backkey.split('.'))):
-                                    backjson = backjson[backkey.split('.')[j]]
+                                    try:
+                                        backjson = backjson[backkey.split('.')[j]]
+                                    except KeyError:
+                                        keyisvalid = False
+                                        break
                             for rule in submap['rules']:
                                 if rule['source'] not in backjson:
                                     keyisvalid = False
