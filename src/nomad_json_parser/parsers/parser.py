@@ -234,6 +234,8 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     transformed_sub = subtransformer.transform(jsonfile, 'sub_transformation')
 
     tempunits = transformed_sub.pop('tempunits', None)
+    logger.info(subclass)
+    logger.info(transformed_sub)
     subclass.m_update_from_dict(transformed_sub)
     if tempunits:
         for unitkey in tempunits.keys():
@@ -248,6 +250,38 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
     return subclass
 
 
+def checkforvalidkey(path, backjson, submap):
+    backkey = path['name'].split('*')[1].strip('.')
+    if backkey:
+        for j in range(len(backkey.split('.'))):
+            try:
+                backjson = backjson[backkey.split('.')[j]]
+            except (KeyError, TypeError, AttributeError):
+                return False
+    if not isinstance(backjson, dict):
+        return False
+    for rule in submap['rules']:
+        rulejson = dict(backjson)
+        for rulekey in rule['source'].split('.'):
+            try:
+                rulejson = rulejson[rulekey]
+            except (KeyError, TypeError):
+                return False
+    return True
+
+
+def appendnewrepeatpath(path, key, newrepeatpath):
+    frontkey = path['name'].split('*')[0].strip('.')
+    backkey = path['name'].split('*')[1].strip('.')
+    newpath = deepcopy(path)
+    newpath['name'] = key
+    if frontkey:
+        newpath['name'] = frontkey + '.' + newpath['name']
+    if backkey:
+        newpath['name'] = newpath['name'] + '.' + backkey
+    newrepeatpath.append(newpath)
+
+
 def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
     if 'subsection_mappings' in mapper.keys():
         newsubmappings = []
@@ -258,35 +292,32 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
                 for path in submap['repeat_paths']:
                     if '*' in path['name']:
                         frontkey = path['name'].split('*')[0].strip('.')
-                        backkey = path['name'].split('*')[1].strip('.')
                         iteratedjson = dict(jsonfile)
                         if frontkey:
                             for j in range(len(frontkey.split('.'))):
                                 iteratedjson = iteratedjson[frontkey.split('.')[j]]
                         for key in iteratedjson.keys():
-                            try:
-                                backjson = dict(iteratedjson[key])
-                            except ValueError:
-                                continue
-                            keyisvalid = True
-                            if backkey:
-                                for j in range(len(backkey.split('.'))):
+                            if isinstance(iteratedjson[key], list):
+                                for k in range(len(iteratedjson[key])):
                                     try:
-                                        backjson = backjson[backkey.split('.')[j]]
-                                    except KeyError:
-                                        keyisvalid = False
-                                        break
-                            for rule in submap['rules']:
-                                if rule['source'] not in backjson:
-                                    keyisvalid = False
-                            if keyisvalid:
-                                newpath = deepcopy(path)
-                                newpath['name'] = key
-                                if frontkey:
-                                    newpath['name'] = frontkey + '.' + newpath['name']
-                                if backkey:
-                                    newpath['name'] = newpath['name'] + '.' + backkey
-                                newrepeatpath.append(newpath)
+                                        backjson = dict(iteratedjson[key][k])
+                                    except ValueError:
+                                        continue
+                                    keyisvalid = checkforvalidkey(
+                                        path, backjson, submap
+                                    )
+                                    if keyisvalid:
+                                        appendnewrepeatpath(
+                                            path, f'{key}[{k}]', newrepeatpath
+                                        )
+                            else:
+                                try:
+                                    backjson = dict(iteratedjson[key])
+                                except ValueError:
+                                    continue
+                                keyisvalid = checkforvalidkey(path, backjson, submap)
+                                if keyisvalid:
+                                    appendnewrepeatpath(path, key, newrepeatpath)
                     else:
                         newrepeatpath.append(path)
                 submap['repeat_paths'] = newrepeatpath
@@ -448,10 +479,14 @@ class MappedJsonParser(MatchingParser):
             else:
                 logger.error('No mapper was found.')
 
+            logger.info(mapper)
+
             mapper = resolve_dynamical_mapper_paths(mapper, jsonfile)
 
+            logger.info(mapper)
             mapper_expanded = expand_mapper(mapper)
 
+            logger.info(mapper_expanded)
             archive_list = []
             mainclass = map_with_nesting(
                 mapper_expanded,
