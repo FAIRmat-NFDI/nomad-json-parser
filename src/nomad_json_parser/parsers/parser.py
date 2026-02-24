@@ -102,6 +102,66 @@ def create_rules(subsection, key, logger):
     return rules
 
 
+def create_mainmapping(subsection, key, logger, archive):  # noqa: PLR0912, PLR0915
+    sectionclass = MainMapper()
+    if (
+        'main_key' in subsection
+        or 'is_archive' in subsection
+        or 'repeats' in subsection
+        or 'repeat_paths' in subsection
+    ):
+        logger.error(
+            'Main section of json mapper should not contain \
+                main_key or is_archive or repeats or repeat_paths.'
+        )
+    sectionclass.name = key
+    try:
+        sectionclass.path_to_schema = subsection['schema']
+    except KeyError:
+        logger.error(f'schema is missing from Subsection {key}.')
+    sectionclass.rules = create_rules(subsection, key, logger)
+    sectionclass.normalize(archive, logger)
+    return sectionclass
+
+
+def create_submapping(subsection, key, logger, archive):  # noqa: PLR0912, PLR0915
+    sectionclass = SubSectionMapper()
+    try:
+        sectionclass.main_key = subsection['main_key']
+    except KeyError:
+        logger.error(f'main_key is missing from Subsection {key}.')
+    if 'is_archive' in subsection:
+        sectionclass.is_archive = subsection['is_archive']
+    if 'repeats' in subsection:
+        sectionclass.repeats = subsection['repeats']
+        if 'repeat_paths' in subsection:
+            repeat_paths = []
+            for path in subsection['repeat_paths']:
+                repeat = RepeatPath()
+                repeat.name = path
+                repeat_paths.append(repeat)
+            sectionclass.repeat_paths = repeat_paths
+    if 'repeat_paths' in subsection and 'repeats' not in subsection:
+        logger.warning('repeat_paths found but not repeats, ignoring repeat_paths.')
+    if 'subsections' in subsection:
+        subsections = []
+        for subkey in subsection['subsections'].keys():
+            logger.info(subkey, subsection['subsections'][subkey])
+            subsectionclass = create_submapping(
+                subsection['subsections'][subkey], subkey, logger, archive
+            )  # noqa: E501
+            subsections.append(subsectionclass)
+        sectionclass.subsections = subsections
+    sectionclass.name = key
+    try:
+        sectionclass.path_to_schema = subsection['schema']
+    except KeyError:
+        logger.error(f'schema is missing from Subsection {key}.')
+    sectionclass.rules = create_rules(subsection, key, logger)
+    sectionclass.normalize(archive, logger)
+    return sectionclass
+
+
 def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912, PLR0915
     main_found = False
     subsections = []
@@ -110,52 +170,13 @@ def create_sectionclass(jsonfile, logger, archive):  # noqa: PLR0912, PLR0915
             continue
         subsection = jsonfile[key]
         if 'is_main' in subsection and subsection['is_main'] == 'True':
-            sectionclass = MainMapper()
-            if (
-                'main_key' in subsection
-                or 'is_archive' in subsection
-                or 'repeats' in subsection
-                or 'repeat_paths' in subsection
-            ):
-                logger.error(
-                    'Main section of json mapper should not contain \
-                        main_key or is_archive or repeats or repeat_paths.'
-                )
-        else:
-            sectionclass = SubSectionMapper()
-            try:
-                sectionclass.main_key = subsection['main_key']
-            except KeyError:
-                logger.error(f'main_key is missing from Subsection {key}.')
-            if 'is_archive' in subsection:
-                sectionclass.is_archive = subsection['is_archive']
-            if 'repeats' in subsection:
-                sectionclass.repeats = subsection['repeats']
-                if 'repeat_paths' in subsection:
-                    repeat_paths = []
-                    for path in subsection['repeat_paths']:
-                        repeat = RepeatPath()
-                        repeat.name = path
-                        repeat_paths.append(repeat)
-                    sectionclass.repeat_paths = repeat_paths
-            if 'repeat_paths' in subsection and 'repeats' not in subsection:
-                logger.warning(
-                    'repeat_paths found but not repeats, ignoring repeat_paths.'
-                )
-        sectionclass.name = key
-        try:
-            sectionclass.path_to_schema = subsection['schema']
-        except KeyError:
-            logger.error(f'schema is missing from Subsection {key}.')
-        sectionclass.rules = create_rules(subsection, key, logger)
-        sectionclass.normalize(archive, logger)
-        if 'is_main' in subsection:
             if not main_found:
-                main_mapping = sectionclass
                 main_found = True
+                main_mapping = create_mainmapping(subsection, key, logger, archive)
             else:
                 logger.error('is_main can only be in one Subsection.')
         else:
+            sectionclass = create_submapping(subsection, key, logger, archive)
             subsections.append(sectionclass)
     return main_mapping, subsections
 

@@ -112,7 +112,7 @@ class RepeatPath(ArchiveSection):
 
 class SubSectionMapper(MainMapper):
     main_key = Quantity(
-        type=str, description='Key of the main class, where the SubSectin is linked.'
+        type=str, description='Key of the main class, where the SubSection is linked.'
     )
     is_archive = Quantity(
         type=bool,
@@ -123,6 +123,7 @@ class SubSectionMapper(MainMapper):
         description='Marks a repeatable Subsection, attaches to existing list.',
     )
     repeat_paths = SubSection(section_def=RepeatPath, repeats=True)
+    subsections = SubSection(section_def='SubSectionMapper', repeats=True)
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)

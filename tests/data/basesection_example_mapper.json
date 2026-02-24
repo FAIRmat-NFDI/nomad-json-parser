@@ -13,7 +13,7 @@
             }
         }
     },
-    "Steps": {
+    "steps_mapping": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
         "main_key": "steps",
         "repeats": "True",
@@ -25,7 +25,7 @@
             "time_unit": "tempunits.duration"
         }
     },
-    "Sample": {
+    "sample_mapping": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystemReference",
         "main_key": "samples",
         "repeats": "True",
@@ -34,7 +34,7 @@
             "name": "name"
         }
     },
-    "System": {
+    "sample_reference_mapping": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
         "main_key": "samples.reference",
         "is_archive": "True",
