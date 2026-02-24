@@ -187,7 +187,7 @@ class JsonMapperParser(MatchingParser):
 
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
         self.set_entrydata_definition()
-        data_file_with_path = mainfile.split('raw/')[-1]
+        data_file_with_path = mainfile.rsplit('raw/', maxsplit=1)[-1]
         entry = self.entrydata_definition()
         entry.mapper_file = data_file_with_path
 
@@ -463,8 +463,8 @@ class MappedJsonParser(MatchingParser):
 
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
         self.set_entrydata_definition()
-        data_file = mainfile.split('/')[-1]
-        data_file_with_path = mainfile.split('raw/')[-1]
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1]
+        data_file_with_path = mainfile.rsplit('raw/', maxsplit=1)[-1]
         entry = self.entrydata_definition()
         entry.json_file = data_file_with_path
 
