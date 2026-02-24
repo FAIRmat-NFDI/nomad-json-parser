@@ -244,7 +244,11 @@ class JsonMapperParser(MatchingParser):
         )
 
 
-def transform_subclass(subclass_mapping, logger, jsonfile):
+def transform_subclass(  # noqa: PLR0913
+    subclass_mapping, logger, jsonfile, archive, archive_list, repeatpath
+):
+    if repeatpath == '' and 'repeat_paths' in subclass_mapping:
+        repeatpath = subclass_mapping['repeat_paths'][0]['name']
     subclass = get_class(subclass_mapping['path_to_schema'], logger)()
     subrules = {
         'sub_transformation': Rules(
@@ -268,6 +272,27 @@ def transform_subclass(subclass_mapping, logger, jsonfile):
                 unitkey,
                 subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
             )
+
+    if 'subsections' in subclass_mapping:
+        for i in range(len(subclass_mapping['subsections'])):
+            subsectionmap = subclass_mapping['subsections'][i]
+            for rule in subsectionmap['rules']:
+                rule['source'] = '.'.join([repeatpath, rule['source']])
+            subsubclass = transform_subclass(
+                subsectionmap, logger, jsonfile, archive, archive_list, repeatpath
+            )
+            if 'is_archive' in subsectionmap.keys() and subsectionmap['is_archive']:
+                sub_ref = create_archive(
+                    subsubclass,
+                    archive,
+                    subsubclass.name + '.archive.json',
+                )
+                archive_list.append(sub_ref)
+                setattr(subclass, subsectionmap['main_key'], sub_ref)
+            elif 'repeats' in subsectionmap.keys() and subsectionmap['repeats']:
+                subclass[subsectionmap['main_key']].append(subsubclass)
+            else:
+                setattr(subclass, subsectionmap['main_key'], subsubclass)
     return subclass
 
 
@@ -357,6 +382,7 @@ def expand_mapper(mapper):
                 for path in submap['repeat_paths']:
                     repeatmap = deepcopy(submap)
                     repeatmap['name'] = path['name'] + '__$' + submap['name']
+                    repeatmap['repeat_paths'] = [RepeatPath(name=path['name'])]
                     for rule in repeatmap['rules']:
                         rule['source'] = '.'.join([path['name'], rule['source']])
                     newsubmappings.append(repeatmap)
@@ -390,10 +416,14 @@ def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list): 
                 mapkey = submap['main_key']
                 if 'repeat_paths' in submap:
                     repeat_path = True
-                subclass = transform_subclass(submap, logger, jsonfile)
+                subclass = transform_subclass(
+                    submap, logger, jsonfile, archive, archive_list, ''
+                )
     mapkey_parent = mapkey + '.'
     if mapkey == '':
-        subclass = transform_subclass(mapper['main_mapping'], logger, jsonfile)
+        subclass = transform_subclass(
+            mapper['main_mapping'], logger, jsonfile, archive, archive_list, ''
+        )
     if 'subsection_mappings' in mapper.keys():
         for i in range(len(mapper['subsection_mappings'])):
             submap = mapper['subsection_mappings'][i]
