@@ -18,6 +18,7 @@
         "main_key": "steps",
         "repeats": "True",
         "repeat_paths": ["*.Steps","Step_3"],
+        "repeat_keys": ["step_description", {"time_unit": "seconds", "How_long_did_it_take": 300.0}],
         "rules": {
             "step_name": "name",
             "step_description": "comment",
@@ -32,16 +33,17 @@
         "repeat_paths": ["Chem.*"],
         "rules": {
             "name": "name"
+        },
+        "subsections": {
+            "sample_reference_mapping": {
+                "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
+                "main_key": "reference",
+                "is_archive": "True",
+                "rules": {
+                    "labid": "lab_id",
+                    "substance_formula": "name"
+                }
+            }
         }
-    },
-    "sample_reference_mapping": {
-        "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
-        "main_key": "samples.reference",
-        "is_archive": "True",
-        "rules": {
-            "labid": "lab_id",
-            "substance_formula": "name"
-        }
-
     }
 }

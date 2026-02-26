@@ -45,7 +45,7 @@ def test_normalize_mapper(parsed_mapper_archive, caplog):
     normalize_all(parsed_mapper_archive)
 
     assert parsed_mapper_archive.data.mapper_key == 'basesectionexamplemapper'
-    assert len(parsed_mapper_archive.data.subsection_mappings) == 3  # Noqa: PLR2004
+    assert len(parsed_mapper_archive.data.subsection_mappings) == 2  # Noqa: PLR2004
     assert parsed_mapper_archive.data.main_mapping.name == 'main_schema'
 
 

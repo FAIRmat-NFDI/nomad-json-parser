@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import ast
 from typing import (
     TYPE_CHECKING,
 )
@@ -50,6 +51,7 @@ from nomad_json_parser.schema_packages.jsonimport import (
     MainMapper,
     MappedJson,
     MapperRule,
+    RepeatKey,
     RepeatPath,
     RuleCondition,
     SubSectionMapper,
@@ -141,6 +143,13 @@ def create_submapping(subsection, key, logger, archive):  # noqa: PLR0912, PLR09
                 repeat.name = path
                 repeat_paths.append(repeat)
             sectionclass.repeat_paths = repeat_paths
+            if 'repeat_keys' in subsection:
+                keys_list = []
+                for s in subsection['repeat_keys']:
+                    repkey = RepeatKey()
+                    repkey.name = str(s)
+                    keys_list.append(repkey)
+                sectionclass.repeat_keys = keys_list
     if 'repeat_paths' in subsection and 'repeats' not in subsection:
         logger.warning('repeat_paths found but not repeats, ignoring repeat_paths.')
     if 'subsections' in subsection:
@@ -296,7 +305,7 @@ def transform_subclass(  # noqa: PLR0913
     return subclass
 
 
-def checkforvalidkey(path, backjson, submap):
+def checkforvalidkey(path, backjson, submap):  # noqa: PLR0911, PLR0912
     backkey = path['name'].split('*')[1].strip('.')
     if backkey:
         for j in range(len(backkey.split('.'))):
@@ -306,13 +315,30 @@ def checkforvalidkey(path, backjson, submap):
                 return False
     if not isinstance(backjson, dict):
         return False
-    for rule in submap['rules']:
-        rulejson = dict(backjson)
-        for rulekey in rule['source'].split('.'):
-            try:
-                rulejson = rulejson[rulekey]
-            except (KeyError, TypeError):
-                return False
+    if 'repeat_keys' in submap:
+        for key in submap['repeat_keys']:
+            rulejson = dict(backjson)
+            if key['name'].startswith('{'):
+                matching = ast.literal_eval(key['name'])
+                for k in matching.keys():
+                    try:
+                        if not rulejson[k] == matching[k]:
+                            return False
+                    except (KeyError, TypeError):
+                        return False
+            else:
+                try:
+                    rulejson = rulejson[key['name']]
+                except (KeyError, TypeError):
+                    return False
+    else:
+        for rule in submap['rules']:
+            rulejson = dict(backjson)
+            for rulekey in rule['source'].split('.'):
+                try:
+                    rulejson = rulejson[rulekey]
+                except (KeyError, TypeError):
+                    return False
     return True
 
 
