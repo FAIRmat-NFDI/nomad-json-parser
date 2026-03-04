@@ -6,29 +6,34 @@
             "Steps": {
                 "step_name": "NaCl into H2O",
                 "step_description": "Put NaCl into H2O",
-                "How_long_did_it_take": 600.0,
                 "time_unit": "seconds"
             }
         },
         {
             "Steps": {
-                "step_name": "Stirring",
+                "step_name": "Stirring 1",
                 "step_description": "Stir clockwise",
                 "How_long_did_it_take": 300.0,
                 "time_unit": "seconds"
             }
+        },
+        {
+            "Steps": {
+                "step_name": "Stirring 2",
+                "step_description": "Stir anti-clockwise",
+                "How_long_did_it_take": 5.0,
+                "time_unit": "minutes"
+            }
+        },
+        {
+            "Steps": {
+                "step_name": "Stirring 3",
+                "step_description": "Stir clockwise",
+                "How_long_did_it_take": 600.0,
+                "time_unit": "seconds"
+            }
         }
     ],
-    "Step_3": {
-            "step_name": "Stirring",
-            "step_description": "Stir clockwise2",
-            "How_long_did_it_take": 300.0,
-            "time_unit": "seconds"
-    },
-    "Step_4": {
-            "step_name": "Stirring",
-            "step_description": "Stir clockwise3"
-    },
     "Chem": {
     "Chemicals1": {
         "name": "Rocksalt",
@@ -36,9 +41,18 @@
         "substance_formula": "NaCl"
     },
     "Chemicals2": {
-        "name": "Gold",
-        "labid": "JN123_Au",
-        "substance_formula": "Au"
+        "name": "Impure_Rocksalt",
+        "labid": "JN234_NaCl",
+        "substance_formula": "NaCl2"
+    },
+    "Chemicals3": {
+        "name": "NaF",
+        "labid": "JN234_NaF",
+        "substance_formula": "NaF"
+    },
+    "Chemicals4": {
+        "labid": "JN234_NaF",
+        "substance_formula": "NaF2"
     }
 }
 }

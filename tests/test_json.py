@@ -85,8 +85,8 @@ def test_mapping_function():
     )
 
     assert len(result) == 10  # Noqa: PLR2004
-    assert result.steps[1].name == 'Stirring'
-    assert result.steps[1].duration.magnitude == 300  # Noqa: PLR2004
+    assert result.steps[1].name == 'Stirring 3'
+    assert result.steps[1].duration.magnitude == 600  # Noqa: PLR2004
     assert result.steps[1].duration.units == 'second'
 
 
