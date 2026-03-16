@@ -2,21 +2,57 @@
     "$mapped_json_class_key": "basesectionexamplemapper",
     "title": "Create NaCl solution",
     "What_did_I_do": "Solution by stirring",
-    "Details": {
-        "Step_1": {
-            "step_name": "NaCl into H2O",
-            "step_description": "Put NaCl into H2O"
+    "Steplist":[    {
+            "Steps": {
+                "step_name": "NaCl into H2O",
+                "step_description": "Put NaCl into H2O",
+                "time_unit": "seconds"
+            }
         },
-        "Step_2": {
-            "step_name": "Stirring",
-            "step_description": "Stir clockwise",
-            "How_long_did_it_take": 300.0,
-            "time_unit": "seconds"
+        {
+            "Steps": {
+                "step_name": "Stirring 1",
+                "step_description": "Stir clockwise",
+                "How_long_did_it_take": 300.0,
+                "time_unit": "seconds"
+            }
+        },
+        {
+            "Steps": {
+                "step_name": "Stirring 2",
+                "step_description": "Stir anti-clockwise",
+                "How_long_did_it_take": 5.0,
+                "time_unit": "minutes"
+            }
+        },
+        {
+            "Steps": {
+                "step_name": "Stirring 3",
+                "step_description": "Stir clockwise",
+                "How_long_did_it_take": 600.0,
+                "time_unit": "seconds"
+            }
         }
-    },
-    "Chemicals": {
+    ],
+    "Chem": {
+    "Chemicals1": {
         "name": "Rocksalt",
         "labid": "JN123_NaCl",
         "substance_formula": "NaCl"
+    },
+    "Chemicals2": {
+        "name": "Impure_Rocksalt",
+        "labid": "JN234_NaCl",
+        "substance_formula": "NaCl2"
+    },
+    "Chemicals3": {
+        "name": "NaF",
+        "labid": "JN234_NaF",
+        "substance_formula": "NaF"
+    },
+    "Chemicals4": {
+        "labid": "JN234_NaF",
+        "substance_formula": "NaF2"
     }
+}
 }

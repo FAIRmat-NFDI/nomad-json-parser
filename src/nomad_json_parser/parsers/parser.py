@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     )
 
 import json
+import re
 import time
 from copy import deepcopy
 
@@ -322,7 +323,7 @@ def checkforvalidkey(path, backjson, submap):  # noqa: PLR0911, PLR0912
                 matching = ast.literal_eval(key['name'])
                 for k in matching.keys():
                     try:
-                        if not rulejson[k] == matching[k]:
+                        if not re.match(matching[k], rulejson[k]):
                             return False
                     except (KeyError, TypeError):
                         return False
@@ -393,6 +394,8 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
                     else:
                         newrepeatpath.append(path)
                 submap['repeat_paths'] = newrepeatpath
+                if len(newrepeatpath) == 0:
+                    continue
             newsubmappings.append(submap)
         mapper['subsection_mappings'] = newsubmappings
     return mapper
