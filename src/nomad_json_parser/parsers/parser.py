@@ -21,6 +21,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import jmespath
 from nomad.datamodel import EntryArchive
 from nomad.parsing import MatchingParser
 
@@ -309,11 +310,12 @@ def transform_subclass(  # noqa: PLR0913
 def checkforvalidkey(path, backjson, submap):  # noqa: PLR0911, PLR0912
     backkey = path['name'].split('*')[1].strip('.')
     if backkey:
-        for j in range(len(backkey.split('.'))):
-            try:
-                backjson = backjson[backkey.split('.')[j]]
-            except (KeyError, TypeError, AttributeError):
-                return False
+        backjson = jmespath.compile(backkey).search(backjson)
+    #     for j in range(len(backkey.split('.'))):
+    #         try:
+    #             backjson = backjson[backkey.split('.')[j]]
+    #         except (KeyError, TypeError, AttributeError):
+    #             return False
     if not isinstance(backjson, dict):
         return False
     if 'repeat_keys' in submap:
@@ -323,13 +325,15 @@ def checkforvalidkey(path, backjson, submap):  # noqa: PLR0911, PLR0912
                 matching = ast.literal_eval(key['name'])
                 for k in matching.keys():
                     try:
-                        if not re.match(matching[k], rulejson[k]):
+                        if not re.match(
+                            matching[k], jmespath.compile(k).search(rulejson)
+                        ):
                             return False
                     except (KeyError, TypeError):
                         return False
             else:
                 try:
-                    rulejson = rulejson[key['name']]
+                    rulejson = jmespath.compile(key['name']).search(rulejson)
                 except (KeyError, TypeError):
                     return False
     else:
@@ -367,8 +371,9 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
                         frontkey = path['name'].split('*')[0].strip('.')
                         iteratedjson = dict(jsonfile)
                         if frontkey:
-                            for j in range(len(frontkey.split('.'))):
-                                iteratedjson = iteratedjson[frontkey.split('.')[j]]
+                            iteratedjson = jmespath.compile(frontkey).search(
+                                iteratedjson
+                            )
                         for key in iteratedjson.keys():
                             if isinstance(iteratedjson[key], list):
                                 for k in range(len(iteratedjson[key])):
