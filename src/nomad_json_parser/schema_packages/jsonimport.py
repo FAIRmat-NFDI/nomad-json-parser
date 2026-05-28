@@ -77,6 +77,20 @@ def createrulesjson(rulesclasses):
     return json.dumps({'rules': rulesdict})
 
 
+class RepeatPath(ArchiveSection):
+    name = Quantity(type=str)
+
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+
+class RepeatKey(ArchiveSection):
+    name = Quantity(type=str)
+
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+
 class RuleCondition(ArchiveSection):
     name = Quantity(type=str)
     regex_path = Quantity(type=str, description='Path to data field')
@@ -90,6 +104,8 @@ class MapperRule(ArchiveSection):
     default_value = Quantity(type=str, description='Default value of the rule')
     use_rule = Quantity(type=str, description='use rule field of the rule')
     conditions = SubSection(section_def=RuleCondition, repeats=True)
+    target_type = Quantity(type=str, description='target type of the rule')
+    match_key = SubSection(section_def=RepeatKey, repeats=True)
 
 
 class MainMapper(ArchiveSection):
@@ -98,20 +114,6 @@ class MainMapper(ArchiveSection):
         type=str, description='Path to the schema for the section'
     )
     rules = SubSection(section_def=MapperRule, repeats=True)
-
-    def normalize(self, archive, logger: BoundLogger) -> None:
-        super().normalize(archive, logger)
-
-
-class RepeatPath(ArchiveSection):
-    name = Quantity(type=str)
-
-    def normalize(self, archive, logger: BoundLogger) -> None:
-        super().normalize(archive, logger)
-
-
-class RepeatKey(ArchiveSection):
-    name = Quantity(type=str)
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)

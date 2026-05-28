@@ -93,6 +93,15 @@ def create_rules(subsection, key, logger):
                         ]
                         condlist.append(conditionssection)
                     rulesection.conditions = condlist
+                if 'target_type' in rule.keys():
+                    rulesection.target_type = rule['target_type']
+                if 'match_key' in rule.keys():
+                    keys_list = []
+                    for s in rule['match_key']:
+                        repkey = RepeatKey()
+                        repkey.name = str(s)
+                        keys_list.append(repkey)
+                    rulesection.match_key = keys_list
             except AttributeError:
                 rulesection.name = f'{rulekey}_to_{rule}'
                 rulesection.source = rulekey
@@ -255,6 +264,15 @@ class JsonMapperParser(MatchingParser):
         )
 
 
+def correcttypes(transformed_sub, subclass_rules):
+    for rule in subclass_rules:
+        if rule['target'] in transformed_sub.keys() and 'target_type' in rule:
+            if rule['target_type'] == 'array':
+                if not isinstance(transformed_sub[rule['target']], list):
+                    transformed_sub[rule['target']] = [transformed_sub[rule['target']]]
+    return transformed_sub
+
+
 def transform_subclass(  # noqa: PLR0913
     subclass_mapping, logger, jsonfile, archive, archive_list, repeatpath
 ):
@@ -271,24 +289,31 @@ def transform_subclass(  # noqa: PLR0913
 
     tempunits = transformed_sub.pop('tempunits', None)
     logger.info(subclass)
+
+    transformed_sub = correcttypes(transformed_sub, subclass_mapping['rules'])
+
     logger.info(transformed_sub)
     subclass.m_update_from_dict(transformed_sub)
     if tempunits:
-        for unitkey in tempunits.keys():
-            from pint import UnitRegistry
+        from pint import UnitRegistry
 
-            ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
-            setattr(
-                subclass,
-                unitkey,
-                subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
-            )
+        ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
+        for unitkey in tempunits.keys():
+            try:
+                setattr(
+                    subclass,
+                    unitkey,
+                    subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
+                )
+            except KeyError:
+                pass
 
     if 'subsections' in subclass_mapping:
         for i in range(len(subclass_mapping['subsections'])):
             subsectionmap = subclass_mapping['subsections'][i]
-            for rule in subsectionmap['rules']:
-                rule['source'] = '.'.join([repeatpath, rule['source']])
+            if not repeatpath == '':
+                for rule in subsectionmap['rules']:
+                    rule['source'] = '.'.join([repeatpath, rule['source']])
             subsubclass = transform_subclass(
                 subsectionmap, logger, jsonfile, archive, archive_list, repeatpath
             )
@@ -344,6 +369,28 @@ def checkforvalidkey(path, backjson, submap):  # noqa: PLR0911, PLR0912
                     rulejson = rulejson[rulekey]
                 except (KeyError, TypeError):
                     return False
+    return True
+
+
+def checkforvalidrulematch(backjson, rule, logger):
+    if not isinstance(backjson, dict):
+        return False
+    for key in rule['match_key']:
+        rulejson = dict(backjson)
+        if key['name'].startswith('{'):
+            matching = ast.literal_eval(key['name'])
+            for k in matching.keys():
+                try:
+                    if not re.match(matching[k], jmespath.compile(k).search(rulejson)):
+                        return False
+                except (KeyError, TypeError):
+                    return False
+        else:
+            try:
+                rulejson = jmespath.compile(key['name']).search(rulejson)
+            except (KeyError, TypeError):
+                return False
+    logger.warning(key, [key])
     return True
 
 
@@ -403,6 +450,50 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
                     continue
             newsubmappings.append(submap)
         mapper['subsection_mappings'] = newsubmappings
+    return mapper
+
+
+def resolve_dynamical_rules(mapper, jsonfile, logger):  # noqa: PLR0912
+    for rule in mapper['main_mapping']['rules']:
+        if '*' in rule['source'] and 'match_key' in rule.keys():
+            newsourcepath = ''
+            frontkey = rule['source'].split('*')[0].strip('.')
+            iteratedjson = dict(jsonfile)
+            logger.warning(rule)
+            if frontkey:
+                iteratedjson = jmespath.compile(frontkey).search(iteratedjson)
+            for key in iteratedjson.keys():
+                if isinstance(iteratedjson[key], list):
+                    for k in range(len(iteratedjson[key])):
+                        try:
+                            backjson = dict(iteratedjson[key][k])
+                        except ValueError:
+                            continue
+                        keyisvalid = checkforvalidrulematch(backjson, rule, logger)
+                        if keyisvalid:
+                            if newsourcepath:
+                                logger.warning(
+                                    f'Found more than one match for rule {rule["name"]} in main mapping. Taking the last match.'  # noqa: E501
+                                )
+                            newsourcepath = rule['source'].replace('*', f'{key}[{k}]')
+                else:
+                    try:
+                        backjson = dict(iteratedjson[key])
+                    except ValueError:
+                        continue
+                    keyisvalid = checkforvalidrulematch(backjson, rule, logger)
+                    if keyisvalid:
+                        if newsourcepath:
+                            logger.warning(
+                                f'Found more than one match for rule {rule["name"]} in main mapping. Taking the last match.'  # noqa: E501
+                            )
+                        newsourcepath = rule['source'].replace('*', key)
+
+            if newsourcepath:
+                rule['source'] = newsourcepath
+            logger.warning(rule)
+
+    logger.warning(mapper)
     return mapper
 
 
@@ -567,6 +658,10 @@ class MappedJsonParser(MatchingParser):
             logger.info(mapper)
 
             mapper = resolve_dynamical_mapper_paths(mapper, jsonfile)
+
+            logger.info(mapper)
+
+            mapper = resolve_dynamical_rules(mapper, jsonfile, logger)
 
             logger.info(mapper)
             mapper_expanded = expand_mapper(mapper)
