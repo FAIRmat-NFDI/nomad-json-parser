@@ -97,6 +97,15 @@ class RuleCondition(ArchiveSection):
     regex_pattern = Quantity(type=str, description='Regex condition for data field')
 
 
+class MatchKey(ArchiveSection):
+    name = Quantity(type=str)
+    match_keys = SubSection(section_def=RepeatKey, repeats=True)
+
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+
+
 class MapperRule(ArchiveSection):
     name = Quantity(type=str)
     source = Quantity(type=str, description='Source of the rule')
@@ -105,7 +114,7 @@ class MapperRule(ArchiveSection):
     use_rule = Quantity(type=str, description='use rule field of the rule')
     conditions = SubSection(section_def=RuleCondition, repeats=True)
     target_type = Quantity(type=str, description='target type of the rule')
-    match_key = SubSection(section_def=RepeatKey, repeats=True)
+    match_key = SubSection(section_def=MatchKey, repeats=True)
 
 
 class MainMapper(ArchiveSection):
@@ -133,7 +142,7 @@ class SubSectionMapper(MainMapper):
     )
     repeat_paths = SubSection(section_def=RepeatPath, repeats=True)
     repeat_keys = SubSection(section_def=RepeatKey, repeats=True)
-    subsections = SubSection(section_def='SubSectionMapper', repeats=True)
+    subsection_mappings = SubSection(section_def='SubSectionMapper', repeats=True)
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
