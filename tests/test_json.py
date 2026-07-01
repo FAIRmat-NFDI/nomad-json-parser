@@ -82,6 +82,7 @@ def test_mapping_function():
         archive,
         jsonfile,
         archive_list,
+        "test/test"
     )
 
     assert len(result) == 10  # Noqa: PLR2004

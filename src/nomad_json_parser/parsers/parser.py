@@ -21,11 +21,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from pyld import jsonld
-
 import jmespath
 from nomad.datamodel import EntryArchive
 from nomad.parsing import MatchingParser
+from pyld import jsonld
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import (
@@ -55,8 +54,8 @@ from nomad_json_parser.schema_packages.jsonimport import (
     MainMapper,
     MappedJson,
     MapperRule,
-    RepeatKey,
     MatchKey,
+    RepeatKey,
     RepeatPath,
     RuleCondition,
     SubSectionMapper,
@@ -101,11 +100,11 @@ def create_rules(subsection, key, logger):
                 if 'match_key' in rule.keys():
                     all_keys = []
                     for m_key in range(10):
-                        str_m_key = f"match_key{m_key}".strip("0")
-                        if not str_m_key in rule.keys():
+                        str_m_key = f'match_key{m_key}'.strip('0')
+                        if str_m_key not in rule.keys():
                             break
                         matchkey = MatchKey()
-                        matchkey.name = f"Match for part {m_key}."
+                        matchkey.name = f'Match for part {m_key}.'
                         keys_list = []
                         for s in rule[str_m_key]:
                             repkey = RepeatKey()
@@ -284,14 +283,22 @@ def correcttypes(transformed_sub, subclass_rules):
                     transformed_sub[rule['target']] = [transformed_sub[rule['target']]]
             elif rule['target_type'] == 'float':
                 try:
-                    transformed_sub[rule['target']]=float(transformed_sub[rule['target']])
+                    transformed_sub[rule['target']] = float(
+                        transformed_sub[rule['target']]
+                    )
                 except ValueError:
-                    transformed_sub[rule['target']]=0
+                    transformed_sub[rule['target']] = 0
     return transformed_sub
 
 
 def transform_subclass(  # noqa: PLR0913
-    subclass_mapping, logger, jsonfile, archive, archive_list, repeatpath,data_file_with_path
+    subclass_mapping,
+    logger,
+    jsonfile,
+    archive,
+    archive_list,
+    repeatpath,
+    data_file_with_path,
 ):
     if repeatpath == '' and 'repeat_paths' in subclass_mapping:
         repeatpath = subclass_mapping['repeat_paths'][0]['name']
@@ -332,13 +339,19 @@ def transform_subclass(  # noqa: PLR0913
                 for rule in subsectionmap['rules']:
                     rule['source'] = '.'.join([repeatpath, rule['source']])
             subsubclass = transform_subclass(
-                subsectionmap, logger, jsonfile, archive, archive_list, repeatpath, data_file_with_path
+                subsectionmap,
+                logger,
+                jsonfile,
+                archive,
+                archive_list,
+                repeatpath,
+                data_file_with_path,
             )
             if 'is_archive' in subsectionmap.keys() and subsectionmap['is_archive']:
                 sub_ref = create_archive(
                     subsubclass,
                     archive,
-                    f"{data_file_with_path.rsplit('/', maxsplit=1)[0]}/{subsubclass.name}.archive.json",
+                    f'{data_file_with_path.rsplit("/", maxsplit=1)[0]}/{subsubclass.name}.archive.json',
                 )
                 archive_list.append(sub_ref)
                 setattr(subclass, subsectionmap['main_key'], sub_ref)
@@ -451,7 +464,7 @@ def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
 def checkforvalidrulematch(backjson, matchrule):
     if not isinstance(backjson, dict):
         return False
-    for key in matchrule["match_keys"]:
+    for key in matchrule['match_keys']:
         rulejson = dict(backjson)
         if key['name'].startswith('{'):
             matching = ast.literal_eval(key['name'])
@@ -468,13 +481,18 @@ def checkforvalidrulematch(backjson, matchrule):
                 return False
     return True
 
+
 def ruleblock_resolve(ruleblock, jsonfile, logger):
-    newruleblock=[]
+    newruleblock = []
     for rule in ruleblock:
-        newrule=deepcopy(rule)
+        newrule = deepcopy(rule)
         for m_key in range(10):
-            if '*' in newrule['source'] and "match_key" in newrule.keys() and len(newrule["match_key"])>m_key:
-                logger.warning(newrule,m_key)
+            if (
+                '*' in newrule['source']
+                and 'match_key' in newrule.keys()
+                and len(newrule['match_key']) > m_key
+            ):
+                logger.warning(newrule, m_key)
                 newsourcepath = ''
                 frontkey = newrule['source'].split('*')[0].strip('.')
                 iteratedjson = dict(jsonfile)
@@ -487,78 +505,93 @@ def ruleblock_resolve(ruleblock, jsonfile, logger):
                                 backjson = dict(iteratedjson[key][k])
                             except ValueError:
                                 continue
-                            keyisvalid = checkforvalidrulematch(backjson, newrule["match_key"][m_key])
+                            keyisvalid = checkforvalidrulematch(
+                                backjson, newrule['match_key'][m_key]
+                            )
                             if keyisvalid:
                                 if newsourcepath:
                                     logger.warning(
                                         f'Found more than one match for rule {rule["name"]} in main mapping. Taking the last match.'  # noqa: E501
                                     )
-                                newsourcepath = newrule['source'].replace('*', f'{key}[{k}]', 1)
+                                newsourcepath = newrule['source'].replace(
+                                    '*', f'{key}[{k}]', 1
+                                )
                     else:
                         try:
                             backjson = dict(iteratedjson[key])
                         except ValueError:
                             continue
-                        keyisvalid = checkforvalidrulematch(backjson, newrule["match_key"][m_key])
+                        keyisvalid = checkforvalidrulematch(
+                            backjson, newrule['match_key'][m_key]
+                        )
                         if keyisvalid:
                             if newsourcepath:
                                 logger.warning(
                                     f'Found more than one match for rule {newrule["name"]} in main mapping. Taking the last match.'  # noqa: E501
                                 )
-                            newsourcepath = newrule['source'].replace('*', key ,1)
+                            newsourcepath = newrule['source'].replace('*', key, 1)
 
                 if newsourcepath:
                     newrule['source'] = newsourcepath
-                logger.warning(newrule,m_key)
+                logger.warning(newrule, m_key)
         newruleblock.append(newrule)
     return newruleblock
 
 
 def resolve_dynamical_rules(mapper, mapname, jsonfile, logger):  # noqa: PLR0912
-    if mapname=="main_mapping":
-        ruleblock=mapper["main_mapping"]["rules"]
-        mapper["main_mapping"]["rules"]=ruleblock_resolve(ruleblock, jsonfile, logger)
-    else:   
-        ruleblock=mapper["rules"]
-        mapper["rules"]=ruleblock_resolve(ruleblock, jsonfile, logger)
-    if "subsection_mappings" in mapper.keys() and len(mapper["subsection_mappings"])>0:
-        for i in range(len(mapper["subsection_mappings"])):
-            mapper["subsection_mappings"][i]=resolve_dynamical_rules(mapper["subsection_mappings"][i],"subsection", jsonfile, logger)
+    if mapname == 'main_mapping':
+        ruleblock = mapper['main_mapping']['rules']
+        mapper['main_mapping']['rules'] = ruleblock_resolve(ruleblock, jsonfile, logger)
+    else:
+        ruleblock = mapper['rules']
+        mapper['rules'] = ruleblock_resolve(ruleblock, jsonfile, logger)
+    if (
+        'subsection_mappings' in mapper.keys()
+        and len(mapper['subsection_mappings']) > 0
+    ):
+        for i in range(len(mapper['subsection_mappings'])):
+            mapper['subsection_mappings'][i] = resolve_dynamical_rules(
+                mapper['subsection_mappings'][i], 'subsection', jsonfile, logger
+            )
     return mapper
 
-def expand_block(mapperblock,parentpath=""):
+
+def expand_block(mapperblock, parentpath=''):
     newsubmappings = []
     for i in range(len(mapperblock)):
-        submap=mapperblock[i]
+        submap = mapperblock[i]
         if 'repeat_paths' in submap and len(submap['repeat_paths']) > 0:
             for path in submap['repeat_paths']:
-                addpath=".".join([parentpath,path['name']]).strip(".")
+                addpath = '.'.join([parentpath, path['name']]).strip('.')
                 repeatmap = deepcopy(submap)
                 repeatmap['name'] = addpath + '__$' + submap['name']
                 repeatmap['repeat_paths'] = [RepeatPath(name=addpath)]
                 for rule in repeatmap['rules']:
                     rule['source'] = '.'.join([addpath, rule['source']])
-                if "subsection_mappings" in repeatmap.keys():
-                    newblock=repeatmap["subsection_mappings"]
-                    repeatmap["subsection_mappings"]=expand_block(newblock,addpath)
+                if 'subsection_mappings' in repeatmap.keys():
+                    newblock = repeatmap['subsection_mappings']
+                    repeatmap['subsection_mappings'] = expand_block(newblock, addpath)
                 newsubmappings.append(repeatmap)
         else:
             for rule in submap['rules']:
-                rule['source'] = '.'.join([parentpath, rule['source']]).strip(".")
-            if "subsection_mappings" in submap.keys():
-                newblock=submap["subsection_mappings"]
-                submap["subsection_mappings"]=expand_block(newblock,parentpath)
+                rule['source'] = '.'.join([parentpath, rule['source']]).strip('.')
+            if 'subsection_mappings' in submap.keys():
+                newblock = submap['subsection_mappings']
+                submap['subsection_mappings'] = expand_block(newblock, parentpath)
             newsubmappings.append(submap)
     return newsubmappings
 
+
 def expand_mapper(mapper):
     if 'subsection_mappings' in mapper.keys():
-        mapperblock=mapper["subsection_mappings"]
-        mapper["subsection_mappings"]=expand_block(mapperblock)
+        mapperblock = mapper['subsection_mappings']
+        mapper['subsection_mappings'] = expand_block(mapperblock)
     return mapper
 
 
-def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list, data_file_with_path):  # noqa: PLR0912, PLR0913
+def map_with_nesting(
+    mapper, mapname, logger, archive, jsonfile, archive_list, data_file_with_path
+):  # noqa: PLR0912, PLR0913
     mapkey = ''
     repeat_path = False
     logger.info(mapname)
@@ -570,12 +603,24 @@ def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list, d
                 if 'repeat_paths' in submap:
                     repeat_path = True
                 subclass = transform_subclass(
-                    submap, logger, jsonfile, archive, archive_list, '', data_file_with_path
+                    submap,
+                    logger,
+                    jsonfile,
+                    archive,
+                    archive_list,
+                    '',
+                    data_file_with_path,
                 )
     mapkey_parent = mapkey + '.'
     if mapkey == '':
         subclass = transform_subclass(
-            mapper['main_mapping'], logger, jsonfile, archive, archive_list, '', data_file_with_path
+            mapper['main_mapping'],
+            logger,
+            jsonfile,
+            archive,
+            archive_list,
+            '',
+            data_file_with_path,
         )
     if 'subsection_mappings' in mapper.keys():
         for i in range(len(mapper['subsection_mappings'])):
@@ -593,13 +638,19 @@ def map_with_nesting(mapper, mapname, logger, archive, jsonfile, archive_list, d
                 ):
                     continue
                 subsubclass = map_with_nesting(
-                    mapper, submap['name'], logger, archive, jsonfile, archive_list, data_file_with_path
+                    mapper,
+                    submap['name'],
+                    logger,
+                    archive,
+                    jsonfile,
+                    archive_list,
+                    data_file_with_path,
                 )
                 if 'is_archive' in submap.keys() and submap['is_archive']:
                     sub_ref = create_archive(
                         subsubclass,
                         archive,
-                        f"{data_file_with_path.rsplit('/', maxsplit=1)[0]}/{subsubclass.name}.archive.json",
+                        f'{data_file_with_path.rsplit("/", maxsplit=1)[0]}/{subsubclass.name}.archive.json',
                     )
                     archive_list.append(sub_ref)
                     setattr(subclass, shortened_mainkey, sub_ref)
@@ -692,7 +743,9 @@ class MappedJsonParser(MatchingParser):
 
             logger.info(mapper_expanded)
 
-            mapper_expanded = resolve_dynamical_rules(mapper_expanded, "main_mapping", jsonfile, logger)
+            mapper_expanded = resolve_dynamical_rules(
+                mapper_expanded, 'main_mapping', jsonfile, logger
+            )
 
             logger.info(mapper_expanded)
             archive_list = []
@@ -709,7 +762,7 @@ class MappedJsonParser(MatchingParser):
             main_ref = create_archive(
                 mainclass,
                 archive,
-                f"{data_file_with_path.rsplit('/', maxsplit=1)[0]}/{mainclass.name}.archive.json",
+                f'{data_file_with_path.rsplit("/", maxsplit=1)[0]}/{mainclass.name}.archive.json',
             )
             archive_list.append(main_ref)
             archive_list.reverse()  # put main entry as first
@@ -722,23 +775,51 @@ class MappedJsonParser(MatchingParser):
 
 
 class ROCrateParser(MatchingParser):
-    
     def __init__(
         self,
         json_matching_key: str | None = None,
+        json_matching_re: str = r'.*',
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-
         self.json_matching_key = json_matching_key
+        self.json_matching_re = re.compile(json_matching_re)
+
+    def is_mainfile(
+        self,
+        filename: str,
+        mime: str,
+        buffer: bytes,
+        decoded_buffer: str,
+        compression: str | None = None,
+    ) -> bool:
+        # First do standard matching
+        if not super().is_mainfile(filename, mime, buffer, decoded_buffer, compression):
+            return False
+
+        # Additional custom logic to ensure this is the ONLY parser that matches
+        # For example, check that this is specifically a PLD file
+
+        # Read the file to make sure it's really a PLD file
+        with open(filename) as f:
+            content = f.read()
+        # Only proceed if it's definitely a PLD file
+        if self.json_matching_re.search(content) is None:
+            return False
+
+        return True
 
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
         data_file_with_path = mainfile.rsplit('raw/', maxsplit=1)[-1]
 
-        with archive.m_context.raw_file(data_file_with_path, 'r') as file:
-            data = json.load(file)    
+        attrs = vars(self)
+        for key, value in attrs.items():
+            logger.error(f'{key}: {value}')
 
-        #fix file pathes
+        with archive.m_context.raw_file(data_file_with_path, 'r') as file:
+            data = json.load(file)
+
+        # fix file pathes (TODO: local pathes would fix the issue)
         for j in range(len(data['@graph'])):
             if data['@graph'][j]['@type'] == 'File':
                 data = json.loads(
@@ -751,22 +832,55 @@ class ROCrateParser(MatchingParser):
                     )
                 )
 
-        #fix base id
-        data_basefixed=json.loads(json.dumps(data).replace("\"./\"","\"http://ROOT_NODE\""))
+        # fix base id
+        expandeddata = jsonld.expand(
+            data,
+            options={'base': 'file://'},
+            # this will replace "./" with "file:///"
+        )
 
-        frame={ "@context": ["https://w3id.org/ro/crate/1.2/context",{'@base': 'http://example.org/base/', '@vocab': 'http://example.org/base/'}],"@id": "http://ROOT_NODE", "@embed": "@always"}
+        frame = {
+            '@context': [
+                'https://w3id.org/ro/crate/1.2/context',
+                {
+                    '@base': 'http://example.org/base/',
+                    '@vocab': 'http://example.org/base/',
+                },
+            ],
+            '@id': 'file:./',
+            '@embed': '@always',
+        }
 
-        frameddata=jsonld.frame(data_basefixed,frame)
+        frameddata = jsonld.frame(expandeddata, frame)
 
-        frameddata['$mapped_json_class_key'] = self.json_matching_key
+        compact_context = {
+            '@context': [
+                'https://w3id.org/ro/crate/1.2/context',
+                {
+                    '@base': 'file:./',  # will replace "file:///" with "./"
+                    'type': '@type',  # optional for clean keywords
+                    'id': '@id',  # optional for clean keywords
+                    'base': '@base',
+                },
+            ]
+        }
 
-        filename = data_file_with_path.replace('ro-crate-metadata.json', 'frameddata.json')
+        compacteddata = jsonld.compact(
+            frameddata, compact_context
+        )  # save the framed data to file
+
+        compacteddatawithkey = {
+            '$mapped_json_class_key': self.json_matching_key,
+            **compacteddata,
+        }
+
+        filename = data_file_with_path.replace(
+            'ro-crate-metadata.json', 'frameddata.json'
+        )
 
         with archive.m_context.raw_file(filename, 'w') as outfile:
-            json.dump(frameddata, outfile)
+            json.dump(compacteddatawithkey, outfile)
 
-        if self.json_matching_key != "default_key":
-
+        if self.json_matching_key != 'default_key':
             toparse = MappedJsonParser(json_file=filename)
             toparse.parse(filename, archive, logger)
-        # json_archive=create_archive(toparse, archive, filename.replace('.json', '.archive.json'))

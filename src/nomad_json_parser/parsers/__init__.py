@@ -49,6 +49,14 @@ class ROCrateParserEntryPoint(ParserEntryPoint):
     )    
 
 
+    json_matching_re: str = Field(
+        r'.*',
+        description="""
+        The regex to match to full file content.
+        """,
+    )    
+
+
     def load(self):
         from nomad_json_parser.parsers.parser import ROCrateParser
 
