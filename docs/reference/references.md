@@ -15,8 +15,11 @@ The JSON mapper the contains information of the schemas to map. Each of these st
 - ```schema```: Mandatory, gives the python path to the schema to map onto. Format: string.
 - ```main_key```: Mandatory for all schemas except the one with ```"is_main": "True"```. Gives the key in the main NOMAD schema, where this section is attached. Can be nested with ".". Format: string.
 - ```repeats```: Optional, indicates that the ```main_key``` point is a repeatable subsection, where this schema is just appended to. Default value: False. Format: boolean.
+- ```repeat_paths```: Optional, requires ```repeats``` set as True. An array of key pathes in the data file, where the respective repeatable subsection should be matched. Uses jmespath notation and a ```*``` can be used as a wildcard.
+- ```repeat_keys```: Optional, requires ```repeats``` set as True and ```repeat_paths``` with a wildcard. A dictionary containing keys, that need to be present to select a subsection, and key-value pairs, that need to be present to select the subsection.
 - ```is_archive```: Optional, indicates that this schema is a separate archive and only the reference is linked in the main entry. Default value: False. Format: boolean.
 - ```rules```: Mandatory, contains mapping rules for the data. Simple mappings (also nested with ".") from source to target can be given just by ```"source": "target"```, more complex mapping rules are possible as described in the [Transformer](https://nomad-lab.eu/prod/v1/docs/howto/manage/program/json_transformer.html).
+- ```subsections```: Optional. Subsections with their own set of parameters.
 
 ## The data file
 
