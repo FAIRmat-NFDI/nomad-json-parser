@@ -50,7 +50,7 @@ def test_normalize_mapper(parsed_mapper_archive, caplog):
 
 
 def test_mapping_function():
-    from nomad_json_parser.parsers.parser import (
+    from nomad_json_parser.parsers.mappedjsonparser import (
         expand_mapper,
         map_with_nesting,
         resolve_dynamical_mapper_paths,
@@ -82,7 +82,7 @@ def test_mapping_function():
         archive,
         jsonfile,
         archive_list,
-        "test/test"
+        'test/test',
     )
 
     assert len(result) == 10  # Noqa: PLR2004

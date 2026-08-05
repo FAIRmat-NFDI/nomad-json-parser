@@ -105,7 +105,6 @@ class MatchKey(ArchiveSection):
         super().normalize(archive, logger)
 
 
-
 class MapperRule(ArchiveSection):
     name = Quantity(type=str)
     source = Quantity(type=str, description='Source of the rule')

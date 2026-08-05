@@ -17,8 +17,8 @@
         "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
         "main_key": "steps",
         "repeats": "True",
-        "repeat_paths": ["*.Steps"],
-        "repeat_keys": ["How_long_did_it_take", {"step_description": "Stir anti-clockwise"}],
+        "repeat_paths": ["*"],
+        "repeat_keys": ["How_long_did_it_take", {"step_description": "Stir clockwise"}],
         "rules": {
             "step_name": "name",
             "step_description": "comment",
@@ -30,9 +30,8 @@
         "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystemReference",
         "main_key": "samples",
         "repeats": "True",
-        "repeat_paths": ["Chem.*"],
         "rules": {
-            "name": "name"
+            "Chem.name": "name"
         },
         "subsections": {
             "sample_reference_mapping": {
@@ -40,8 +39,8 @@
                 "main_key": "reference",
                 "is_archive": "True",
                 "rules": {
-                    "labid": "lab_id",
-                    "substance_formula": "name"
+                    "Chem.labid": "lab_id",
+                    "Chem.substance_formula": "name"
                 }
             }
         }

@@ -22,5 +22,5 @@ example_upload_entry_point = ExampleUploadEntryPoint(
     category='Examples',
     description='This example upload contains a mapper file and the respective JSON \
     file to be parsed into the schema in example.py',
-    path='example_uploads/json_mapper/',
+    path='example_uploads/json_mapper',
 )
