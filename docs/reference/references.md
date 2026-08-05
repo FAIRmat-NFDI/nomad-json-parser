@@ -6,8 +6,8 @@ This page will provide information to all possible keys in the JSON files.
 
 On the top level of the JSON, the following keys are possible:
 
-- ```json_mapper_class_key```: Mandatory, gives the key to find matching data entries. Format: string.
-- ```json_mapper_version```: Optional, defines, which version this mapper is for the respective key. Default value: 1. Format: integer.
+- ```$json_mapper_class_key```: Mandatory, gives the key to find matching data entries. Format: string.
+- ```$json_mapper_version```: Optional, defines, which version this mapper is for the respective key. Default value: 1. Format: integer.
 
 The JSON mapper the contains information of the schemas to map. Each of these starts with a name, which has no further meaning. Possible keys for each schema are:
 
@@ -25,7 +25,7 @@ The JSON mapper the contains information of the schemas to map. Each of these st
 
 The data file has the following possible keys:
 
-- ```json_mapper_class_key```: Mandatory, gives the key to find matching parser. Format: string.
-- ```json_mapper_version```: Optional, specify, which version this mapper is used. Default value: highest. Format: integer.
+- ```$json_mapper_class_key```: Mandatory, gives the key to find matching parser. Format: string.
+- ```$json_mapper_version```: Optional, specify, which version this mapper is used. Default value: highest. Format: integer.
 
 Apart from these two keys, the data file can contain the data in any JSON format.
