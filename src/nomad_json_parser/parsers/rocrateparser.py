@@ -75,10 +75,6 @@ class ROCrateParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
         data_file_with_path = mainfile.rsplit('raw/', maxsplit=1)[-1]
 
-        attrs = vars(self)
-        for key, value in attrs.items():
-            logger.error(f'{key}: {value}')
-
         with archive.m_context.raw_file(data_file_with_path, 'r') as file:
             data = json.load(file)
 
@@ -90,7 +86,10 @@ class ROCrateParser(MatchingParser):
                         data['@graph'][j]['@id'],
                         data['@graph'][j]['@id'].replace(
                             './',
-                            './' + data_file_with_path.strip('ro-crate-metadata.json'),
+                            './'
+                            + data_file_with_path.removesuffix(
+                                'ro-crate-metadata.json'
+                            ),  # noqa: E501
                         ),
                     )
                 )

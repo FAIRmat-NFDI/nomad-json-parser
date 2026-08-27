@@ -1,7 +1,8 @@
 #
 # Copyright The NOMAD Authors.
 #
-# This file is part of NOMAD. See https://nomad-lab.eu for further info.
+# This file is part of NOMAD.
+# See https://nomad-lab.eu for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from nomad.config.models.plugins import ExampleUploadEntryPoint
-
-example_upload_entry_point = ExampleUploadEntryPoint(
-    title='JSON Mapper Example',
-    category='Examples',
-    description='This example upload contains a mapper file and the \
-          respective JSON file to be parsed into the schema in example.py',
-    path='example_uploads/json_mapper/',
-)
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = ''

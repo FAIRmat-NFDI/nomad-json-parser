@@ -241,7 +241,7 @@ class JsonMapperParser(MatchingParser):
                     },
                     user_id=archive.metadata.main_author.user_id,
                 )
-                if len(search_result.data) > 1:
+                if len(search_result.data) > 0:
                     logger.error(
                         'At least one mapper with the same key and\
                               version has been found.'

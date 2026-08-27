@@ -131,7 +131,7 @@ def transform_subclass(  # noqa: PLR0913, PLR0917
                 sub_ref = create_archive(
                     subsubclass,
                     archive,
-                    f'{subsubclass.name}.archive.json',
+                    f'{subsubclass.name}_{subclass_mapping["name"]}.archive.json',
                 )
                 archive_list.append(sub_ref)
                 setattr(subclass, subsectionmap['main_key'], sub_ref)
@@ -430,7 +430,7 @@ def map_with_nesting(  # noqa: PLR0912, PLR0913, PLR0917
                     sub_ref = create_archive(
                         subsubclass,
                         archive,
-                        f'{subsubclass.name}.archive.json',  # noqa: E501
+                        f'{subsubclass.name}_{submap["name"]}.archive.json',  # noqa: E501
                     )
                     archive_list.append(sub_ref)
                     setattr(subclass, shortened_mainkey, sub_ref)
@@ -451,8 +451,6 @@ class MappedJsonParser(MatchingParser):
         data_file_with_path = mainfile.rsplit('raw/', maxsplit=1)[-1]
         entry = self.entrydata_definition()
         entry.json_file = data_file_with_path
-
-        logger.error(mainfile)
 
         if entry.json_file:
             with archive.m_context.raw_file(entry.json_file, 'r') as file:
