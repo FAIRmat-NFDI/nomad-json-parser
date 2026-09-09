@@ -45,12 +45,16 @@ def test_normalize_mapper(parsed_mapper_archive, caplog):
     normalize_all(parsed_mapper_archive)
 
     assert parsed_mapper_archive.data.mapper_key == 'basesectionexamplemapper'
-    assert len(parsed_mapper_archive.data.subsection_mappings) == 4  # Noqa: PLR2004
+    assert len(parsed_mapper_archive.data.subsection_mappings) == 2  # Noqa: PLR2004
     assert parsed_mapper_archive.data.main_mapping.name == 'main_schema'
 
 
 def test_mapping_function():
-    from nomad_json_parser.parsers.parser import map_with_nesting
+    from nomad_json_parser.parsers.mappedjsonparser import (
+        expand_mapper,
+        map_with_nesting,
+        resolve_dynamical_mapper_paths,
+    )
 
     mapper_archive = parse('tests/data/basesection_example_mapper.json')[0]
 
@@ -65,17 +69,24 @@ def test_mapping_function():
 
     archive_list = []
 
+    mapper = mapper_archive['data'].m_to_dict()
+
+    mapper = resolve_dynamical_mapper_paths(mapper, jsonfile)
+
+    mapper_expanded = expand_mapper(mapper)
+
     result = map_with_nesting(
-        mapper_archive['data'].m_to_dict(),
-        mapper_archive['data']['main_mapping']['name'],
+        mapper_expanded,
+        mapper_expanded['main_mapping']['name'],
         logger,
         archive,
         jsonfile,
         archive_list,
+        'test/test',
     )
 
     assert len(result) == 10  # Noqa: PLR2004
-    assert result.steps[1].name == 'Stirring'
+    assert result.steps[1].name == 'Stirring 1'
     assert result.steps[1].duration.magnitude == 300  # Noqa: PLR2004
     assert result.steps[1].duration.units == 'second'
 

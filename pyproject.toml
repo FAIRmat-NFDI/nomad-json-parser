@@ -25,9 +25,11 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 dependencies = [
-    "nomad-lab>=1.3.16",
+    "nomad-lab>=1.4.0",
     "python-magic-bin; sys_platform == 'win32'",
     "nomad-material-processing",
+    "pyLD",
+    "pyLD[requests]"
 ]
 
 [project.urls]
@@ -119,8 +121,10 @@ where = ["src"]
 json_mapper_schema_package = "nomad_json_parser.schema_packages:json_mapper_schema_package"
 json_mapper_parser = "nomad_json_parser.parsers:json_mapper_parser"
 mapped_json_parser = "nomad_json_parser.parsers:mapped_json_parser"
+#ro_crate_parser = "nomad_json_parser.parsers:ro_crate_parser"
 example_upload_entry_point = "nomad_json_parser.example_uploads:example_upload_entry_point"
 
 [tool.cruft]
 # Avoid updating workflow files, this leads to permissions issues
 skip = [".github/*"]
+#

@@ -13,42 +13,36 @@
             }
         }
     },
-    "Activity_Step1": {
+    "steps_mapping": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
         "main_key": "steps",
         "repeats": "True",
+        "repeat_paths": ["*"],
+        "repeat_keys": ["How_long_did_it_take", {"step_description": "Stir clockwise"}],
         "rules": {
-            "Details.Step_1.step_name": "name",
-            "Details.Step_1.step_description": "description"
+            "step_name": "name",
+            "step_description": "comment",
+            "How_long_did_it_take": "duration",
+            "time_unit": "tempunits.duration"
         }
     },
-    "ProcessStep2": {
-        "schema": "nomad.datamodel.metainfo.basesections.v1.ProcessStep",
-        "main_key": "steps",
-        "repeats": "True",
-        "rules": {
-            "Details.Step_2.step_name": "name",
-            "Details.Step_2.step_description": "description",
-            "Details.Step_2.How_long_did_it_take": "duration",
-            "Details.Step_2.time_unit": "tempunits.duration"
-        }
-    },
-    "Sample": {
+    "sample_mapping": {
         "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystemReference",
         "main_key": "samples",
         "repeats": "True",
         "rules": {
-            "Chemicals.name": "name"
+            "Chem.name": "name"
+        },
+        "subsections": {
+            "sample_reference_mapping": {
+                "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
+                "main_key": "reference",
+                "is_archive": "True",
+                "rules": {
+                    "Chem.labid": "lab_id",
+                    "Chem.substance_formula": "name"
+                }
+            }
         }
-    },
-    "System": {
-        "schema": "nomad.datamodel.metainfo.basesections.v1.CompositeSystem",
-        "main_key": "samples.reference",
-        "is_archive": "True",
-        "rules": {
-            "Chemicals.labid": "lab_id",
-            "Chemicals.substance_formula": "name"
-        }
-
     }
 }

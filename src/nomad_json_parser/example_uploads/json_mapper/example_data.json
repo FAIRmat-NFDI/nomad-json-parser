@@ -2,19 +2,31 @@
     "$mapped_json_class_key": "basesectionexamplemapper",
     "title": "Create NaCl solution",
     "What_did_I_do": "Solution by stirring",
-    "Details": {
-        "Step_1": {
-            "step_name": "NaCl into H2O",
-            "step_description": "Put NaCl into H2O"
+    "Steplist":[    {
+                "step_name": "NaCl into H2O",
+                "step_description": "Put NaCl into H2O",
+                "time_unit": "seconds"
         },
-        "Step_2": {
-            "step_name": "Stirring",
-            "step_description": "Stir clockwise",
-            "How_long_did_it_take": 300.0,
-            "time_unit": "seconds"
+        {
+                "step_name": "Stirring 1",
+                "step_description": "Stir clockwise",
+                "How_long_did_it_take": 300.0,
+                "time_unit": "seconds"
+        },
+        {
+                "step_name": "Stirring 2",
+                "step_description": "Stir anti-clockwise",
+                "How_long_did_it_take": 5.0,
+                "time_unit": "minutes"
+        },
+        {
+                "step_name": "Stirring 3",
+                "step_description": "Stir clockwise",
+                "How_long_did_it_take": 600.0,
+                "time_unit": "seconds"
         }
-    },
-    "Chemicals": {
+    ],
+    "Chem": {
         "name": "Rocksalt",
         "labid": "JN123_NaCl",
         "substance_formula": "NaCl"

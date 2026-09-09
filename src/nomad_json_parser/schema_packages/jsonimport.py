@@ -77,10 +77,32 @@ def createrulesjson(rulesclasses):
     return json.dumps({'rules': rulesdict})
 
 
+class RepeatPath(ArchiveSection):
+    name = Quantity(type=str)
+
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+
+class RepeatKey(ArchiveSection):
+    name = Quantity(type=str)
+
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+
 class RuleCondition(ArchiveSection):
     name = Quantity(type=str)
     regex_path = Quantity(type=str, description='Path to data field')
     regex_pattern = Quantity(type=str, description='Regex condition for data field')
+
+
+class MatchKey(ArchiveSection):
+    name = Quantity(type=str)
+    match_keys = SubSection(section_def=RepeatKey, repeats=True)
+
+    def normalize(self, archive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
 
 
 class MapperRule(ArchiveSection):
@@ -90,6 +112,8 @@ class MapperRule(ArchiveSection):
     default_value = Quantity(type=str, description='Default value of the rule')
     use_rule = Quantity(type=str, description='use rule field of the rule')
     conditions = SubSection(section_def=RuleCondition, repeats=True)
+    target_type = Quantity(type=str, description='target type of the rule')
+    match_key = SubSection(section_def=MatchKey, repeats=True)
 
 
 class MainMapper(ArchiveSection):
@@ -105,7 +129,7 @@ class MainMapper(ArchiveSection):
 
 class SubSectionMapper(MainMapper):
     main_key = Quantity(
-        type=str, description='Key of the main class, where the SubSectin is linked.'
+        type=str, description='Key of the main class, where the SubSection is linked.'
     )
     is_archive = Quantity(
         type=bool,
@@ -115,6 +139,9 @@ class SubSectionMapper(MainMapper):
         type=bool,
         description='Marks a repeatable Subsection, attaches to existing list.',
     )
+    repeat_paths = SubSection(section_def=RepeatPath, repeats=True)
+    repeat_keys = SubSection(section_def=RepeatKey, repeats=True)
+    subsection_mappings = SubSection(section_def='SubSectionMapper', repeats=True)
 
     def normalize(self, archive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)

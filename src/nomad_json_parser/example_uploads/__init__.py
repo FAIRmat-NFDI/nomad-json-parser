@@ -20,7 +20,7 @@ from nomad.config.models.plugins import ExampleUploadEntryPoint
 example_upload_entry_point = ExampleUploadEntryPoint(
     title='JSON Mapper Example',
     category='Examples',
-    description='This example upload contains a mapper file and the respective JSON \
-    file to be parsed into the schema in example.py',
+    description='This example upload contains a mapper file and the \
+          respective JSON file to be parsed into the schema in example.py',
     path='example_uploads/json_mapper/',
 )

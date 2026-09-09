@@ -1,0 +1,554 @@
+#
+# Copyright The NOMAD Authors.
+#
+# This file is part of NOMAD. See https://nomad-lab.eu for further info.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+import ast
+from typing import (
+    TYPE_CHECKING,
+)
+
+import jmespath
+from nomad.datamodel import EntryArchive
+from nomad.parsing import MatchingParser
+
+if TYPE_CHECKING:
+    from nomad.datamodel.datamodel import (
+        EntryArchive,
+    )
+
+import json
+import re
+import time
+from copy import deepcopy
+
+from nomad.datamodel import ClientContext, EntryArchive
+from nomad.datamodel.metainfo.annotations import (
+    Rules,
+)
+from nomad.search import (
+    MetadataPagination,
+    MetadataRequired,
+    search,
+)
+from nomad.utils.json_transformer import Transformer
+from nomad_material_processing.utils import create_archive
+
+from nomad_json_parser.schema_packages.jsonimport import (
+    MappedJson,
+    RepeatPath,
+    createrulesjson,
+    get_class,
+)
+
+
+def correcttypes(transformed_sub, subclass_rules):
+    for rule in subclass_rules:
+        if rule['target'] in transformed_sub.keys() and 'target_type' in rule:
+            if rule['target_type'] == 'array':
+                if not isinstance(transformed_sub[rule['target']], list):
+                    transformed_sub[rule['target']] = [transformed_sub[rule['target']]]
+            elif rule['target_type'] == 'float':
+                try:
+                    transformed_sub[rule['target']] = float(
+                        transformed_sub[rule['target']]
+                    )
+                except ValueError:
+                    transformed_sub[rule['target']] = 0
+    return transformed_sub
+
+
+def transform_subclass(  # noqa: PLR0913, PLR0917
+    subclass_mapping,
+    logger,
+    jsonfile,
+    archive,
+    archive_list,
+    repeatpath,
+    data_file_with_path,
+):
+    if repeatpath == '' and 'repeat_paths' in subclass_mapping:
+        repeatpath = subclass_mapping['repeat_paths'][0]['name']
+    subclass = get_class(subclass_mapping['path_to_schema'], logger)()
+    subrules = {
+        'sub_transformation': Rules(
+            **json.loads(createrulesjson(subclass_mapping['rules']))
+        )
+    }
+    subtransformer = Transformer(subrules)
+    transformed_sub = subtransformer.transform(jsonfile, 'sub_transformation')
+
+    tempunits = transformed_sub.pop('tempunits', None)
+    logger.info(subclass)
+
+    transformed_sub = correcttypes(transformed_sub, subclass_mapping['rules'])
+
+    logger.info(transformed_sub)
+    subclass.m_update_from_dict(transformed_sub)
+    if tempunits:
+        from pint import UnitRegistry
+
+        ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
+        for unitkey in tempunits.keys():
+            try:
+                setattr(
+                    subclass,
+                    unitkey,
+                    subclass[unitkey].magnitude * ureg(tempunits[unitkey]),
+                )
+            except KeyError:
+                pass
+
+    if 'subsection_mappings' in subclass_mapping:
+        for i in range(len(subclass_mapping['subsection_mappings'])):
+            subsectionmap = subclass_mapping['subsection_mappings'][i]
+            if not repeatpath == '':
+                for rule in subsectionmap['rules']:
+                    rule['source'] = '.'.join([repeatpath, rule['source']])
+            subsubclass = transform_subclass(
+                subsectionmap,
+                logger,
+                jsonfile,
+                archive,
+                archive_list,
+                repeatpath,
+                data_file_with_path,
+            )
+            if 'is_archive' in subsectionmap.keys() and subsectionmap['is_archive']:
+                sub_ref = create_archive(
+                    subsubclass,
+                    archive,
+                    f'{subsubclass.name}_{subclass_mapping["name"]}.archive.json',
+                )
+                archive_list.append(sub_ref)
+                setattr(subclass, subsectionmap['main_key'], sub_ref)
+            elif 'repeats' in subsectionmap.keys() and subsectionmap['repeats']:
+                subclass[subsectionmap['main_key']].append(subsubclass)
+            else:
+                setattr(subclass, subsectionmap['main_key'], subsubclass)
+    return subclass
+
+
+def checkforvalidkey(path, backjson, submap):  # noqa: PLR0911, PLR0912
+    backkey = path['name'].split('*')[1].strip('.')
+    if backkey:
+        backjson = jmespath.compile(backkey).search(backjson)
+    #     for j in range(len(backkey.split('.'))):
+    #         try:
+    #             backjson = backjson[backkey.split('.')[j]]
+    #         except (KeyError, TypeError, AttributeError):
+    #             return False
+    if not isinstance(backjson, dict):
+        return False
+    if 'repeat_keys' in submap:
+        for key in submap['repeat_keys']:
+            rulejson = dict(backjson)
+            if key['name'].startswith('{'):
+                matching = ast.literal_eval(key['name'])
+                for k in matching.keys():
+                    try:
+                        if not re.match(
+                            matching[k], jmespath.compile(k).search(rulejson)
+                        ):
+                            return False
+                    except (KeyError, TypeError):
+                        return False
+            else:
+                try:
+                    rulejson = jmespath.compile(key['name']).search(rulejson)
+                except (KeyError, TypeError):
+                    return False
+    else:
+        for rule in submap['rules']:
+            rulejson = dict(backjson)
+            for rulekey in rule['source'].split('.'):
+                try:
+                    rulejson = rulejson[rulekey]
+                except (KeyError, TypeError):
+                    return False
+    return True
+
+
+def appendnewrepeatpath(path, key, newrepeatpath):
+    frontkey = path['name'].split('*')[0].strip('.')
+    backkey = path['name'].split('*')[1].strip('.')
+    newpath = deepcopy(path)
+    newpath['name'] = key
+    if frontkey:
+        newpath['name'] = frontkey + '.' + newpath['name']
+    if backkey:
+        newpath['name'] = newpath['name'] + '.' + backkey
+    newrepeatpath.append(newpath)
+
+
+def resolve_dynamical_mapper_paths(mapper, jsonfile):  # noqa: PLR0912
+    if 'subsection_mappings' in mapper.keys():
+        newsubmappings = []
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if 'repeat_paths' in submap and len(submap['repeat_paths']) > 0:
+                newrepeatpath = []
+                for path in submap['repeat_paths']:
+                    if '*' in path['name']:
+                        frontkey = path['name'].split('*')[0].strip('.')
+                        iteratedjson = dict(jsonfile)
+                        if frontkey:
+                            iteratedjson = jmespath.compile(frontkey).search(
+                                iteratedjson
+                            )
+                        for key in iteratedjson.keys():
+                            if isinstance(iteratedjson[key], list):
+                                for k in range(len(iteratedjson[key])):
+                                    try:
+                                        backjson = dict(iteratedjson[key][k])
+                                    except ValueError:
+                                        continue
+                                    keyisvalid = checkforvalidkey(
+                                        path, backjson, submap
+                                    )
+                                    if keyisvalid:
+                                        appendnewrepeatpath(
+                                            path, f'{key}[{k}]', newrepeatpath
+                                        )
+                            else:
+                                try:
+                                    backjson = dict(iteratedjson[key])
+                                except ValueError:
+                                    continue
+                                keyisvalid = checkforvalidkey(path, backjson, submap)
+                                if keyisvalid:
+                                    appendnewrepeatpath(path, key, newrepeatpath)
+                    else:
+                        newrepeatpath.append(path)
+                submap['repeat_paths'] = newrepeatpath
+                if len(newrepeatpath) == 0:
+                    continue
+            newsubmappings.append(submap)
+        mapper['subsection_mappings'] = newsubmappings
+    return mapper
+
+
+def checkforvalidrulematch(backjson, matchrule):
+    if not isinstance(backjson, dict):
+        return False
+    for key in matchrule['match_keys']:
+        rulejson = dict(backjson)
+        if key['name'].startswith('{'):
+            matching = ast.literal_eval(key['name'])
+            for k in matching.keys():
+                try:
+                    if not re.match(matching[k], jmespath.compile(k).search(rulejson)):
+                        return False
+                except (KeyError, TypeError):
+                    return False
+        else:
+            try:
+                rulejson = jmespath.compile(key['name']).search(rulejson)
+            except (KeyError, TypeError):
+                return False
+    return True
+
+
+def ruleblock_resolve(ruleblock, jsonfile, logger):  # noqa: PLR0912
+    newruleblock = []
+    for rule in ruleblock:
+        newrule = deepcopy(rule)
+        for m_key in range(10):
+            if (
+                '*' in newrule['source']
+                and 'match_key' in newrule.keys()
+                and len(newrule['match_key']) > m_key
+            ):
+                logger.warning(newrule, m_key)
+                newsourcepath = ''
+                frontkey = newrule['source'].split('*')[0].strip('.')
+                iteratedjson = dict(jsonfile)
+                if frontkey:
+                    iteratedjson = jmespath.compile(frontkey).search(iteratedjson)
+                for key in iteratedjson.keys():
+                    if isinstance(iteratedjson[key], list):
+                        for k in range(len(iteratedjson[key])):
+                            try:
+                                backjson = dict(iteratedjson[key][k])
+                            except ValueError:
+                                continue
+                            keyisvalid = checkforvalidrulematch(
+                                backjson, newrule['match_key'][m_key]
+                            )
+                            if keyisvalid:
+                                if newsourcepath:
+                                    logger.warning(
+                                        f'Found more than one match for rule {rule["name"]} in main mapping. Taking the last match.'  # noqa: E501
+                                    )
+                                newsourcepath = newrule['source'].replace(
+                                    '*', f'{key}[{k}]', 1
+                                )
+                    else:
+                        try:
+                            backjson = dict(iteratedjson[key])
+                        except ValueError:
+                            continue
+                        keyisvalid = checkforvalidrulematch(
+                            backjson, newrule['match_key'][m_key]
+                        )
+                        if keyisvalid:
+                            if newsourcepath:
+                                logger.warning(
+                                    f'Found more than one match for rule {newrule["name"]} in main mapping. Taking the last match.'  # noqa: E501
+                                )
+                            newsourcepath = newrule['source'].replace('*', key, 1)
+
+                if newsourcepath:
+                    newrule['source'] = newsourcepath
+                logger.warning(newrule, m_key)
+        newruleblock.append(newrule)
+    return newruleblock
+
+
+def resolve_dynamical_rules(mapper, mapname, jsonfile, logger):  # noqa: PLR0912
+    if mapname == 'main_mapping':
+        ruleblock = mapper['main_mapping']['rules']
+        mapper['main_mapping']['rules'] = ruleblock_resolve(ruleblock, jsonfile, logger)
+    else:
+        ruleblock = mapper['rules']
+        mapper['rules'] = ruleblock_resolve(ruleblock, jsonfile, logger)
+    if (
+        'subsection_mappings' in mapper.keys()
+        and len(mapper['subsection_mappings']) > 0
+    ):
+        for i in range(len(mapper['subsection_mappings'])):
+            mapper['subsection_mappings'][i] = resolve_dynamical_rules(
+                mapper['subsection_mappings'][i], 'subsection', jsonfile, logger
+            )
+    return mapper
+
+
+def expand_block(mapperblock, parentpath=''):
+    newsubmappings = []
+    for i in range(len(mapperblock)):
+        submap = mapperblock[i]
+        if 'repeat_paths' in submap and len(submap['repeat_paths']) > 0:
+            for path in submap['repeat_paths']:
+                addpath = '.'.join([parentpath, path['name']]).strip('.')
+                repeatmap = deepcopy(submap)
+                repeatmap['name'] = addpath + '__$' + submap['name']
+                repeatmap['repeat_paths'] = [RepeatPath(name=addpath)]
+                for rule in repeatmap['rules']:
+                    rule['source'] = '.'.join([addpath, rule['source']])
+                if 'subsection_mappings' in repeatmap.keys():
+                    newblock = repeatmap['subsection_mappings']
+                    repeatmap['subsection_mappings'] = expand_block(newblock, addpath)
+                newsubmappings.append(repeatmap)
+        else:
+            for rule in submap['rules']:
+                rule['source'] = '.'.join([parentpath, rule['source']]).strip('.')
+            if 'subsection_mappings' in submap.keys():
+                newblock = submap['subsection_mappings']
+                submap['subsection_mappings'] = expand_block(newblock, parentpath)
+            newsubmappings.append(submap)
+    return newsubmappings
+
+
+def expand_mapper(mapper):
+    if 'subsection_mappings' in mapper.keys():
+        mapperblock = mapper['subsection_mappings']
+        mapper['subsection_mappings'] = expand_block(mapperblock)
+    return mapper
+
+
+def map_with_nesting(  # noqa: PLR0912, PLR0913, PLR0917
+    mapper, mapname, logger, archive, jsonfile, archive_list, data_file_with_path
+):  # noqa: PLR0912, PLR0913
+    mapkey = ''
+    repeat_path = False
+    logger.info(mapname)
+    if 'subsection_mappings' in mapper.keys():
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            if submap['name'] == mapname:
+                mapkey = submap['main_key']
+                if 'repeat_paths' in submap:
+                    repeat_path = True
+                subclass = transform_subclass(
+                    submap,
+                    logger,
+                    jsonfile,
+                    archive,
+                    archive_list,
+                    '',
+                    data_file_with_path,
+                )
+    mapkey_parent = mapkey + '.'
+    if mapkey == '':
+        subclass = transform_subclass(
+            mapper['main_mapping'],
+            logger,
+            jsonfile,
+            archive,
+            archive_list,
+            '',
+            data_file_with_path,
+        )
+    if 'subsection_mappings' in mapper.keys():
+        for i in range(len(mapper['subsection_mappings'])):
+            submap = mapper['subsection_mappings'][i]
+            shortened_mainkey = submap['main_key'].removeprefix(mapkey_parent)
+            if mapkey == '':
+                mapkey_parent = ''
+            if (
+                submap['main_key'].startswith(mapkey_parent)
+                and '.' not in shortened_mainkey
+            ):
+                if (
+                    repeat_path
+                    and not mapname.split('__$')[0] == submap['name'].split('__$')[0]
+                ):
+                    continue
+                subsubclass = map_with_nesting(
+                    mapper,
+                    submap['name'],
+                    logger,
+                    archive,
+                    jsonfile,
+                    archive_list,
+                    data_file_with_path,
+                )
+                if 'is_archive' in submap.keys() and submap['is_archive']:
+                    sub_ref = create_archive(
+                        subsubclass,
+                        archive,
+                        f'{subsubclass.name}_{submap["name"]}.archive.json',  # noqa: E501
+                    )
+                    archive_list.append(sub_ref)
+                    setattr(subclass, shortened_mainkey, sub_ref)
+                elif 'repeats' in submap.keys() and submap['repeats']:
+                    subclass[shortened_mainkey].append(subsubclass)
+                else:
+                    setattr(subclass, shortened_mainkey, subsubclass)
+    return subclass
+
+
+class MappedJsonParser(MatchingParser):
+    def set_entrydata_definition(self):
+        self.entrydata_definition = MappedJson
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:  # noqa: PLR0912, PLR0915
+        self.set_entrydata_definition()
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1]
+        data_file_with_path = mainfile.rsplit('raw/', maxsplit=1)[-1]
+        entry = self.entrydata_definition()
+        entry.json_file = data_file_with_path
+
+        if entry.json_file:
+            with archive.m_context.raw_file(entry.json_file, 'r') as file:
+                jsonfile = json.load(file)
+
+            try:
+                entry.mapper_key = jsonfile['$mapped_json_class_key']
+                if '$mapped_json_version' in jsonfile.keys():
+                    entry.mapper_version = jsonfile['$mapped_json_version']
+            except KeyError:
+                logger.error(
+                    'Missing keys for mappedjson file ($mapped_json_class_key).'
+                )
+
+        logger.info('Starting search for mapper with same key.')
+        if not isinstance(archive.m_context, ClientContext):
+            query = {
+                'data.mapper_key#nomad_json_parser.schema_packages.jsonimport.JsonMapper': entry.mapper_key,  # noqa: E501
+            }
+            if entry.mapper_version:
+                logger.info(
+                    f'Searching for mapper with version {entry.mapper_version}.'
+                )
+                query[
+                    'data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper'
+                ] = entry.mapper_version
+            else:
+                logger.info('Searching for mapper with latest version.')
+            numberofretries = 5
+            for count in range(numberofretries):
+                logger.info(f'Starting search loop {count}.')
+                search_result = search(
+                    owner='all',
+                    query=query,
+                    required=MetadataRequired(
+                        include=['data*', 'upload_id', 'entry_id']
+                    ),
+                    pagination=MetadataPagination(
+                        page_size=1,
+                        order='desc',
+                        order_by='data.mapper_version#nomad_json_parser.schema_packages.jsonimport.JsonMapper',
+                    ),
+                    user_id=archive.metadata.main_author.user_id,
+                )
+                if len(search_result.data) > 1:
+                    logger.error(
+                        'Found more than one suitable mapper. This can not be.'
+                    )
+                elif len(search_result.data) == 0:
+                    logger.warning('Found no matching mapper.')
+                elif len(search_result.data) == 1:
+                    mapper_result = search_result.data[0]
+                    upload_id = mapper_result['upload_id']
+                    entry_id = mapper_result['entry_id']
+                    entry.mapper_reference = (
+                        f'../uploads/{upload_id}/archive/{entry_id}#data'
+                    )
+                    mapper = mapper_result['data']
+                    break
+                time.sleep(5)
+            else:
+                logger.error('No mapper was found.')
+
+            logger.info(mapper)
+
+            mapper = resolve_dynamical_mapper_paths(mapper, jsonfile)
+
+            logger.info(mapper)
+            mapper_expanded = expand_mapper(mapper)
+
+            logger.info(mapper_expanded)
+
+            mapper_expanded = resolve_dynamical_rules(
+                mapper_expanded, 'main_mapping', jsonfile, logger
+            )
+
+            logger.info(mapper_expanded)
+            archive_list = []
+            mainclass = map_with_nesting(
+                mapper_expanded,
+                mapper_expanded['main_mapping']['name'],
+                logger,
+                archive,
+                jsonfile,
+                archive_list,
+                data_file_with_path,
+            )
+
+            main_ref = create_archive(
+                mainclass,
+                archive,
+                f'{mainclass.name}.archive.json',
+            )
+            archive_list.append(main_ref)
+            archive_list.reverse()  # put main entry as first
+            entry.generated_entries = archive_list
+
+        archive.data = entry
+        archive.metadata.entry_name = (
+            f'{data_file}_MappedJson_{entry.mapper_key}_v{entry.mapper_version}'
+        )
